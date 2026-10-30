@@ -1,0 +1,8 @@
+extends:
+  - recommended
+
+rules:
+  # Upstream platforms rarely document every error response; keep these as warnings.
+  operation-4xx-response: warn
+  info-license: off
+  no-server-example.com: error
