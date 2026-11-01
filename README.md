@@ -3,7 +3,7 @@
 OpenAPI contracts for the commerce platforms the LINK! agent (link engine service v2) connects to.
 Each spec is uploaded (or linked) in the agent app's **Add a System** form so the agent knows which endpoints exist.
 
-> **Status: in progress.** Only Square has a spec file so far. Each platform folder has a `SOURCE.md`
+> **Status: in progress.** Square and Lightspeed X-Series have spec files so far. Each platform folder has a `SOURCE.md`
 > that records where its spec comes from, how auth works, and what is still unverified.
 
 ## Layout
@@ -14,7 +14,9 @@ agent-open-api-contracts/
 ├── redocly.yaml              # lint rules for every spec
 ├── scripts/
 │   ├── lint.sh               # lints templates/ and every specs/*/openapi.* file
-│   └── trim_openapi.py       # cuts an official spec down to chosen tags
+│   ├── trim_openapi.py       # cuts an official spec down to chosen tags
+│   ├── merge_openapi.py      # joins per-endpoint specs into one (fails on conflicts)
+│   └── build_x_series.sh     # re-downloads + merges the X-Series spec
 ├── templates/
 │   ├── SOURCE.md             # copy into a new platform folder
 │   └── openapi.yaml          # minimal valid OpenAPI 3.0 skeleton
@@ -34,7 +36,7 @@ Callback URL for every OAuth app: `https://agent.linktoany.com/oauth/callback`
 |---|---|---|---|---|---|---|
 | Shopify | `specs/shopify` | OAuth 2.0 | Done | None official (GraphQL Admin; REST is legacy) | No | Yes |
 | Square | `specs/square` | OAuth 2.0 | Done | **Official** (Apache-2.0) | **Yes** (trimmed, 70 ops) | Yes |
-| Lightspeed X-Series | `specs/lightspeed-x-series` | OAuth 2.0 | Done | Per-endpoint only: assemble from reference pages | No | Yes |
+| Lightspeed X-Series | `specs/lightspeed-x-series` | OAuth 2.0 | Done | Per-endpoint only (Apache-2.0): merged | **Yes** (71 ops) | Yes |
 | Lightspeed R-Series | `specs/lightspeed-r-series` | OAuth 2.0 | Done | None official | No | Yes |
 | Lightspeed K-Series | `specs/lightspeed-k-series` | OAuth 2.0 (verify) | **Blocked**: partner application | Unknown | No | Yes, once approved |
 | Clover | `specs/clover` | OAuth 2.0 | Done (sandbox) | None official; Postman collection | No | Yes |

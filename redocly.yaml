@@ -18,3 +18,10 @@ apis:
       operation-4xx-response: off
       tag-description: off
       no-unused-components: off
+  lightspeed-x-series:
+    root: specs/lightspeed-x-series/openapi.json
+    rules:
+      no-invalid-media-type-examples: off
+      operation-4xx-response: off
+      # Upstream design: /gift_cards/transactions/{id} vs /gift_cards/{card_number}/transactions.
+      no-ambiguous-paths: off
