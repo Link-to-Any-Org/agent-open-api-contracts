@@ -1,0 +1,12 @@
+{
+  "name": "agent-open-api-contracts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "./scripts/lint.sh",
+    "validate:shopify": "node scripts/validate_shopify_graphql.mjs"
+  },
+  "devDependencies": {
+    "graphql": "16.9.0"
+  }
+}

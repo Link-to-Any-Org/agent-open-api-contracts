@@ -1,0 +1,565 @@
+# Shopify Admin GraphQL operations for the LINK! agent (API 2026-10).
+# Source of truth for specs/shopify/graphql/openapi.json:
+#   python3 scripts/build_shopify_graphql.py   # writes openapi.json
+#   npm run validate:shopify                   # checks every query + variables against the live schema
+# Each operation: name, tag, scopes, summary, query, variables (example values).
+
+- name: GetShop
+  tag: Shop
+  scopes: []
+  summary: Shop name, currency, plan and primary domain
+  query: |
+    query GetShop {
+      shop {
+        id
+        name
+        email
+        currencyCode
+        ianaTimezone
+        plan { publicDisplayName shopifyPlus }
+        primaryDomain { url }
+      }
+    }
+  variables: {}
+
+# ---------------------------------------------------------------- Locations
+- name: ListLocations
+  tag: Locations
+  scopes: [read_locations]
+  summary: List locations (stores, warehouses)
+  query: |
+    query ListLocations($first: Int!, $after: String) {
+      locations(first: $first, after: $after, includeInactive: false) {
+        nodes {
+          id
+          name
+          isActive
+          fulfillsOnlineOrders
+          address { address1 city province countryCode zip }
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  variables: { first: 50 }
+
+# ---------------------------------------------------------------- Products & images
+- name: ListProducts
+  tag: Products
+  scopes: [read_products]
+  summary: List products with variants, SKUs and featured image
+  query: |
+    query ListProducts($first: Int!, $after: String, $query: String) {
+      products(first: $first, after: $after, query: $query) {
+        nodes {
+          id
+          title
+          handle
+          status
+          vendor
+          productType
+          tags
+          updatedAt
+          featuredMedia { preview { image { url altText } } }
+          variants(first: 100) {
+            nodes { id title sku price barcodes(first: 5) { nodes { type value } } inventoryItem { id } }
+          }
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  variables: { first: 25, query: "status:active" }
+
+- name: GetProduct
+  tag: Products
+  scopes: [read_products]
+  summary: One product with all images and variants
+  query: |
+    query GetProduct($id: ID!) {
+      product(id: $id) {
+        id
+        title
+        descriptionHtml
+        status
+        vendor
+        productType
+        tags
+        media(first: 50) {
+          nodes {
+            id
+            mediaContentType
+            ... on MediaImage { image { url altText width height } }
+          }
+        }
+        variants(first: 100) {
+          nodes { id title sku price compareAtPrice barcodes(first: 5) { nodes { type value } } inventoryItem { id tracked } }
+        }
+      }
+    }
+  variables: { id: "gid://shopify/Product/1234567890" }
+
+- name: FindVariantsBySku
+  tag: Products
+  scopes: [read_products]
+  summary: Find variants by SKU or barcode (search syntax, e.g. "barcode:0123")
+  query: |
+    query FindVariantsBySku($query: String!, $first: Int!) {
+      productVariants(first: $first, query: $query) {
+        nodes {
+          id
+          sku
+          barcodes(first: 5) { nodes { type value } }
+          displayName
+          product { id title }
+          inventoryItem { id }
+        }
+      }
+    }
+  variables: { query: "sku:ABC-123", first: 10 }
+
+- name: AddProductImage
+  tag: Products
+  scopes: [write_products]
+  summary: Add an image to a product from a public URL
+  query: |
+    mutation AddProductImage($productId: ID!, $media: [CreateMediaInput!]!) {
+      productUpdate(product: { id: $productId }, media: $media) {
+        product {
+          id
+          media(first: 10) { nodes { id status mediaContentType } }
+        }
+        userErrors { field message }
+      }
+    }
+  variables:
+    productId: "gid://shopify/Product/1234567890"
+    media:
+      - originalSource: "https://example.com/images/shirt-front.jpg"
+        alt: "Shirt, front"
+        mediaContentType: IMAGE
+
+# ---------------------------------------------------------------- Inventory
+- name: ListInventoryAtLocation
+  tag: Inventory
+  scopes: [read_inventory]
+  summary: Stock levels (available, on hand, committed, incoming) at one location
+  query: |
+    query ListInventoryAtLocation($locationId: ID!, $first: Int!, $after: String) {
+      location(id: $locationId) {
+        id
+        name
+        inventoryLevels(first: $first, after: $after) {
+          nodes {
+            id
+            item { id sku tracked variants(first: 1) { nodes { id displayName } } }
+            quantities(names: ["available", "on_hand", "committed", "incoming"]) { name quantity }
+          }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+    }
+  variables: { locationId: "gid://shopify/Location/1234567890", first: 100 }
+
+- name: GetInventoryItem
+  tag: Inventory
+  scopes: [read_inventory]
+  summary: One inventory item with its stock at every location
+  query: |
+    query GetInventoryItem($id: ID!) {
+      inventoryItem(id: $id) {
+        id
+        sku
+        tracked
+        unitCost { amount currencyCode }
+        variants(first: 1) { nodes { id displayName } }
+        inventoryLevels(first: 50) {
+          nodes {
+            location { id name }
+            quantities(names: ["available", "on_hand"]) { name quantity }
+          }
+        }
+      }
+    }
+  variables: { id: "gid://shopify/InventoryItem/1234567890" }
+
+- name: AdjustInventory
+  tag: Inventory
+  scopes: [write_inventory]
+  summary: Change stock by a delta (e.g. +5 received, -2 damaged)
+  query: |
+    mutation AdjustInventory($input: InventoryAdjustQuantitiesInput!) {
+      inventoryAdjustQuantities(input: $input) {
+        inventoryAdjustmentGroup {
+          createdAt
+          reason
+          changes { name delta quantityAfterChange item { id } location { id } }
+        }
+        userErrors { field message }
+      }
+    }
+  variables:
+    input:
+      reason: correction
+      name: available
+      changes:
+        - delta: 5
+          inventoryItemId: "gid://shopify/InventoryItem/1234567890"
+          locationId: "gid://shopify/Location/1234567890"
+
+- name: SetInventory
+  tag: Inventory
+  scopes: [write_inventory]
+  summary: Set absolute stock (e.g. after a count); changeFromQuantity guards against races
+  query: |
+    mutation SetInventory($input: InventorySetQuantitiesInput!) {
+      inventorySetQuantities(input: $input) {
+        inventoryAdjustmentGroup {
+          reason
+          changes { name delta quantityAfterChange }
+        }
+        userErrors { field message }
+      }
+    }
+  variables:
+    input:
+      reason: cycle_count_available
+      name: available
+      quantities:
+        - inventoryItemId: "gid://shopify/InventoryItem/1234567890"
+          locationId: "gid://shopify/Location/1234567890"
+          quantity: 12
+          changeFromQuantity: 10
+
+# ---------------------------------------------------------------- Consignments (transfers)
+- name: ListInventoryTransfers
+  tag: Transfers
+  scopes: [read_inventory_transfers]
+  summary: List stock transfers between locations
+  query: |
+    query ListInventoryTransfers($first: Int!, $after: String, $query: String) {
+      inventoryTransfers(first: $first, after: $after, query: $query) {
+        nodes {
+          id
+          name
+          status
+          referenceName
+          dateCreated
+          totalQuantity
+          receivedQuantity
+          origin { name location { id } }
+          destination { name location { id } }
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  variables: { first: 25 }
+
+- name: GetInventoryTransfer
+  tag: Transfers
+  scopes: [read_inventory_transfers, read_inventory_shipments]
+  summary: One transfer with line items and shipments
+  query: |
+    query GetInventoryTransfer($id: ID!) {
+      inventoryTransfer(id: $id) {
+        id
+        name
+        status
+        note
+        origin { name location { id } }
+        destination { name location { id } }
+        lineItems(first: 100) {
+          nodes { id title totalQuantity shippedQuantity inventoryItem { id sku } }
+        }
+        shipments(first: 10) {
+          nodes { id name status totalReceivedQuantity }
+        }
+      }
+    }
+  variables: { id: "gid://shopify/InventoryTransfer/1234567890" }
+
+- name: CreateInventoryTransfer
+  tag: Transfers
+  scopes: [write_inventory_transfers]
+  summary: Create a draft transfer between two locations
+  query: |
+    mutation CreateInventoryTransfer($input: InventoryTransferCreateInput!) {
+      inventoryTransferCreate(input: $input) {
+        inventoryTransfer { id name status totalQuantity }
+        userErrors { field message }
+      }
+    }
+  variables:
+    input:
+      originLocationId: "gid://shopify/Location/1111111111"
+      destinationLocationId: "gid://shopify/Location/2222222222"
+      referenceName: "Restock store 2"
+      lineItems:
+        - inventoryItemId: "gid://shopify/InventoryItem/1234567890"
+          quantity: 10
+
+- name: MarkTransferReadyToShip
+  tag: Transfers
+  scopes: [write_inventory_transfers]
+  summary: Move a draft transfer to ready-to-ship
+  query: |
+    mutation MarkTransferReadyToShip($id: ID!) {
+      inventoryTransferMarkAsReadyToShip(id: $id) {
+        inventoryTransfer { id status }
+        userErrors { field message }
+      }
+    }
+  variables: { id: "gid://shopify/InventoryTransfer/1234567890" }
+
+- name: ReceiveInventoryShipment
+  tag: Transfers
+  scopes: [write_inventory_shipments_received_items]
+  summary: Receive items on a transfer's shipment
+  query: |
+    mutation ReceiveInventoryShipment($id: ID!, $lineItems: [InventoryShipmentReceiveItemInput!]) {
+      inventoryShipmentReceive(id: $id, lineItems: $lineItems) {
+        inventoryShipment { id status totalReceivedQuantity }
+        userErrors { field message }
+      }
+    }
+  variables:
+    id: "gid://shopify/InventoryShipment/1234567890"
+    lineItems:
+      - shipmentLineItemId: "gid://shopify/InventoryShipmentLineItem/1234567890"
+        quantity: 10
+        reason: ACCEPTED
+
+# ---------------------------------------------------------------- Orders
+- name: ListOrders
+  tag: Orders
+  scopes: [read_orders]
+  summary: List orders (last 60 days unless read_all_orders is granted)
+  query: |
+    query ListOrders($first: Int!, $after: String, $query: String) {
+      orders(first: $first, after: $after, query: $query, sortKey: CREATED_AT, reverse: true) {
+        nodes {
+          id
+          name
+          createdAt
+          displayFinancialStatus
+          displayFulfillmentStatus
+          totalPriceSet { shopMoney { amount currencyCode } }
+          customer { id displayName }
+          lineItems(first: 50) {
+            nodes { id title sku quantity variant { id } }
+          }
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  variables: { first: 25, query: "created_at:>=2026-10-01" }
+
+- name: GetOrder
+  tag: Orders
+  scopes: [read_orders]
+  summary: One order with lines, addresses and fulfillments
+  query: |
+    query GetOrder($id: ID!) {
+      order(id: $id) {
+        id
+        name
+        createdAt
+        cancelledAt
+        displayFinancialStatus
+        displayFulfillmentStatus
+        currencyCode
+        subtotalPriceSet { shopMoney { amount currencyCode } }
+        totalTaxSet { shopMoney { amount currencyCode } }
+        totalPriceSet { shopMoney { amount currencyCode } }
+        customer { id displayName defaultEmailAddress { emailAddress } }
+        shippingAddress { address1 city province countryCodeV2 zip }
+        lineItems(first: 100) {
+          nodes {
+            id
+            title
+            sku
+            quantity
+            originalUnitPriceSet { shopMoney { amount currencyCode } }
+            variant { id inventoryItem { id } }
+          }
+        }
+        fulfillments { id status createdAt location { id name } }
+      }
+    }
+  variables: { id: "gid://shopify/Order/1234567890" }
+
+# ---------------------------------------------------------------- Customers
+- name: ListCustomers
+  tag: Customers
+  scopes: [read_customers]
+  summary: List or search customers
+  query: |
+    query ListCustomers($first: Int!, $after: String, $query: String) {
+      customers(first: $first, after: $after, query: $query) {
+        nodes {
+          id
+          displayName
+          defaultEmailAddress { emailAddress }
+          defaultPhoneNumber { phoneNumber }
+          numberOfOrders
+          amountSpent { amount currencyCode }
+          tags
+          updatedAt
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  variables: { first: 25, query: "email:*@example.com" }
+
+- name: GetCustomer
+  tag: Customers
+  scopes: [read_customers]
+  summary: One customer with addresses
+  query: |
+    query GetCustomer($id: ID!) {
+      customer(id: $id) {
+        id
+        firstName
+        lastName
+        displayName
+        defaultEmailAddress { emailAddress }
+        defaultPhoneNumber { phoneNumber }
+        note
+        tags
+        defaultAddress { address1 city province countryCodeV2 zip }
+        addressesV2(first: 10) { nodes { id address1 city countryCodeV2 zip } }
+      }
+    }
+  variables: { id: "gid://shopify/Customer/1234567890" }
+
+- name: CreateCustomer
+  tag: Customers
+  scopes: [write_customers]
+  summary: Create a customer
+  query: |
+    mutation CreateCustomer($input: CustomerInput!) {
+      customerCreate(input: $input) {
+        customer { id displayName }
+        userErrors { field message }
+      }
+    }
+  variables:
+    input:
+      firstName: Jane
+      lastName: Doe
+      email: jane.doe@example.com
+      tags: [wholesale]
+
+- name: UpdateCustomer
+  tag: Customers
+  scopes: [write_customers]
+  summary: Update a customer (send id plus the fields to change)
+  query: |
+    mutation UpdateCustomer($input: CustomerInput!) {
+      customerUpdate(input: $input) {
+        customer { id displayName note tags }
+        userErrors { field message }
+      }
+    }
+  variables:
+    input:
+      id: "gid://shopify/Customer/1234567890"
+      note: "Prefers email contact"
+
+# ---------------------------------------------------------------- Gift cards
+- name: ListGiftCards
+  tag: GiftCards
+  scopes: [read_gift_cards]
+  summary: List gift cards with balances
+  query: |
+    query ListGiftCards($first: Int!, $after: String, $query: String) {
+      giftCards(first: $first, after: $after, query: $query) {
+        nodes {
+          id
+          lastCharacters
+          enabled
+          expiresOn
+          balance { amount currencyCode }
+          initialValue { amount currencyCode }
+          customer { id displayName }
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  variables: { first: 25, query: "status:enabled" }
+
+- name: GetGiftCard
+  tag: GiftCards
+  scopes: [read_gift_cards, read_gift_card_transactions]
+  summary: One gift card with its transactions
+  query: |
+    query GetGiftCard($id: ID!) {
+      giftCard(id: $id) {
+        id
+        maskedCode
+        enabled
+        balance { amount currencyCode }
+        transactions(first: 50) {
+          nodes { id amount { amount currencyCode } processedAt note }
+        }
+      }
+    }
+  variables: { id: "gid://shopify/GiftCard/1234567890" }
+
+- name: CreateGiftCard
+  tag: GiftCards
+  scopes: [write_gift_cards]
+  summary: Issue a gift card (the full code is returned only here, once)
+  query: |
+    mutation CreateGiftCard($input: GiftCardCreateInput!) {
+      giftCardCreate(input: $input) {
+        giftCard { id lastCharacters balance { amount currencyCode } }
+        giftCardCode
+        userErrors { field message code }
+      }
+    }
+  variables:
+    input:
+      initialAmount: { amount: "25.00", currencyCode: USD }
+      note: "Issued by agent"
+
+- name: CreditGiftCard
+  tag: GiftCards
+  scopes: [write_gift_card_transactions]
+  summary: Add value to a gift card
+  query: |
+    mutation CreditGiftCard($id: ID!, $creditInput: GiftCardCreditInput!) {
+      giftCardCredit(id: $id, creditInput: $creditInput) {
+        giftCardCreditTransaction { id amount { amount currencyCode } giftCard { id balance { amount } } }
+        userErrors { field message code }
+      }
+    }
+  variables:
+    id: "gid://shopify/GiftCard/1234567890"
+    creditInput: { creditAmount: { amount: "10.00", currencyCode: USD }, note: "Goodwill credit" }
+
+- name: DebitGiftCard
+  tag: GiftCards
+  scopes: [write_gift_card_transactions]
+  summary: Take value off a gift card
+  query: |
+    mutation DebitGiftCard($id: ID!, $debitInput: GiftCardDebitInput!) {
+      giftCardDebit(id: $id, debitInput: $debitInput) {
+        giftCardDebitTransaction { id amount { amount currencyCode } giftCard { id balance { amount } } }
+        userErrors { field message code }
+      }
+    }
+  variables:
+    id: "gid://shopify/GiftCard/1234567890"
+    debitInput: { debitAmount: { amount: "5.00", currencyCode: USD } }
+
+- name: DeactivateGiftCard
+  tag: GiftCards
+  scopes: [write_gift_cards]
+  summary: Permanently deactivate a gift card
+  query: |
+    mutation DeactivateGiftCard($id: ID!) {
+      giftCardDeactivate(id: $id) {
+        giftCard { id enabled deactivatedAt }
+        userErrors { field message code }
+      }
+    }
+  variables: { id: "gid://shopify/GiftCard/1234567890" }

@@ -1,0 +1,759 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Shopify Admin GraphQL API 2026-10 (agent contract)",
+    "version": "2026-10",
+    "description": "Every call is `POST /graphql.json` with a `query` and `variables`. The named request examples (also listed in `x-graphql-operations`) are the operations the agent should use; each is validated against Shopify's live schema for this version. Check `userErrors` on every mutation: Shopify returns HTTP 200 even when a mutation fails. Generated from operations.yaml by scripts/build_shopify_graphql.py; do not edit by hand."
+  },
+  "externalDocs": {
+    "url": "https://shopify.dev/docs/api/admin-graphql/2026-10"
+  },
+  "servers": [
+    {
+      "url": "https://{shop}.myshopify.com/admin/api/2026-10",
+      "variables": {
+        "shop": {
+          "default": "your-store",
+          "description": "Store subdomain, e.g. link-engine-service-v2-test-store-1"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "accessToken": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "GraphQL",
+      "description": "Shopify Admin GraphQL endpoint"
+    }
+  ],
+  "x-graphql-operations": [
+    {
+      "name": "GetShop",
+      "tag": "Shop",
+      "summary": "Shop name, currency, plan and primary domain",
+      "kind": "query",
+      "scopes": []
+    },
+    {
+      "name": "ListLocations",
+      "tag": "Locations",
+      "summary": "List locations (stores, warehouses)",
+      "kind": "query",
+      "scopes": [
+        "read_locations"
+      ]
+    },
+    {
+      "name": "ListProducts",
+      "tag": "Products",
+      "summary": "List products with variants, SKUs and featured image",
+      "kind": "query",
+      "scopes": [
+        "read_products"
+      ]
+    },
+    {
+      "name": "GetProduct",
+      "tag": "Products",
+      "summary": "One product with all images and variants",
+      "kind": "query",
+      "scopes": [
+        "read_products"
+      ]
+    },
+    {
+      "name": "FindVariantsBySku",
+      "tag": "Products",
+      "summary": "Find variants by SKU or barcode (search syntax, e.g. \"barcode:0123\")",
+      "kind": "query",
+      "scopes": [
+        "read_products"
+      ]
+    },
+    {
+      "name": "AddProductImage",
+      "tag": "Products",
+      "summary": "Add an image to a product from a public URL",
+      "kind": "mutation",
+      "scopes": [
+        "write_products"
+      ]
+    },
+    {
+      "name": "ListInventoryAtLocation",
+      "tag": "Inventory",
+      "summary": "Stock levels (available, on hand, committed, incoming) at one location",
+      "kind": "query",
+      "scopes": [
+        "read_inventory"
+      ]
+    },
+    {
+      "name": "GetInventoryItem",
+      "tag": "Inventory",
+      "summary": "One inventory item with its stock at every location",
+      "kind": "query",
+      "scopes": [
+        "read_inventory"
+      ]
+    },
+    {
+      "name": "AdjustInventory",
+      "tag": "Inventory",
+      "summary": "Change stock by a delta (e.g. +5 received, -2 damaged)",
+      "kind": "mutation",
+      "scopes": [
+        "write_inventory"
+      ]
+    },
+    {
+      "name": "SetInventory",
+      "tag": "Inventory",
+      "summary": "Set absolute stock (e.g. after a count); changeFromQuantity guards against races",
+      "kind": "mutation",
+      "scopes": [
+        "write_inventory"
+      ]
+    },
+    {
+      "name": "ListInventoryTransfers",
+      "tag": "Transfers",
+      "summary": "List stock transfers between locations",
+      "kind": "query",
+      "scopes": [
+        "read_inventory_transfers"
+      ]
+    },
+    {
+      "name": "GetInventoryTransfer",
+      "tag": "Transfers",
+      "summary": "One transfer with line items and shipments",
+      "kind": "query",
+      "scopes": [
+        "read_inventory_transfers",
+        "read_inventory_shipments"
+      ]
+    },
+    {
+      "name": "CreateInventoryTransfer",
+      "tag": "Transfers",
+      "summary": "Create a draft transfer between two locations",
+      "kind": "mutation",
+      "scopes": [
+        "write_inventory_transfers"
+      ]
+    },
+    {
+      "name": "MarkTransferReadyToShip",
+      "tag": "Transfers",
+      "summary": "Move a draft transfer to ready-to-ship",
+      "kind": "mutation",
+      "scopes": [
+        "write_inventory_transfers"
+      ]
+    },
+    {
+      "name": "ReceiveInventoryShipment",
+      "tag": "Transfers",
+      "summary": "Receive items on a transfer's shipment",
+      "kind": "mutation",
+      "scopes": [
+        "write_inventory_shipments_received_items"
+      ]
+    },
+    {
+      "name": "ListOrders",
+      "tag": "Orders",
+      "summary": "List orders (last 60 days unless read_all_orders is granted)",
+      "kind": "query",
+      "scopes": [
+        "read_orders"
+      ]
+    },
+    {
+      "name": "GetOrder",
+      "tag": "Orders",
+      "summary": "One order with lines, addresses and fulfillments",
+      "kind": "query",
+      "scopes": [
+        "read_orders"
+      ]
+    },
+    {
+      "name": "ListCustomers",
+      "tag": "Customers",
+      "summary": "List or search customers",
+      "kind": "query",
+      "scopes": [
+        "read_customers"
+      ]
+    },
+    {
+      "name": "GetCustomer",
+      "tag": "Customers",
+      "summary": "One customer with addresses",
+      "kind": "query",
+      "scopes": [
+        "read_customers"
+      ]
+    },
+    {
+      "name": "CreateCustomer",
+      "tag": "Customers",
+      "summary": "Create a customer",
+      "kind": "mutation",
+      "scopes": [
+        "write_customers"
+      ]
+    },
+    {
+      "name": "UpdateCustomer",
+      "tag": "Customers",
+      "summary": "Update a customer (send id plus the fields to change)",
+      "kind": "mutation",
+      "scopes": [
+        "write_customers"
+      ]
+    },
+    {
+      "name": "ListGiftCards",
+      "tag": "GiftCards",
+      "summary": "List gift cards with balances",
+      "kind": "query",
+      "scopes": [
+        "read_gift_cards"
+      ]
+    },
+    {
+      "name": "GetGiftCard",
+      "tag": "GiftCards",
+      "summary": "One gift card with its transactions",
+      "kind": "query",
+      "scopes": [
+        "read_gift_cards",
+        "read_gift_card_transactions"
+      ]
+    },
+    {
+      "name": "CreateGiftCard",
+      "tag": "GiftCards",
+      "summary": "Issue a gift card (the full code is returned only here, once)",
+      "kind": "mutation",
+      "scopes": [
+        "write_gift_cards"
+      ]
+    },
+    {
+      "name": "CreditGiftCard",
+      "tag": "GiftCards",
+      "summary": "Add value to a gift card",
+      "kind": "mutation",
+      "scopes": [
+        "write_gift_card_transactions"
+      ]
+    },
+    {
+      "name": "DebitGiftCard",
+      "tag": "GiftCards",
+      "summary": "Take value off a gift card",
+      "kind": "mutation",
+      "scopes": [
+        "write_gift_card_transactions"
+      ]
+    },
+    {
+      "name": "DeactivateGiftCard",
+      "tag": "GiftCards",
+      "summary": "Permanently deactivate a gift card",
+      "kind": "mutation",
+      "scopes": [
+        "write_gift_cards"
+      ]
+    }
+  ],
+  "paths": {
+    "/graphql.json": {
+      "post": {
+        "operationId": "adminGraphql",
+        "summary": "Run a Shopify Admin GraphQL query or mutation",
+        "description": "Operations by area: Customers (ListCustomers, GetCustomer, CreateCustomer, UpdateCustomer), GiftCards (ListGiftCards, GetGiftCard, CreateGiftCard, CreditGiftCard, DebitGiftCard, DeactivateGiftCard), Inventory (ListInventoryAtLocation, GetInventoryItem, AdjustInventory, SetInventory), Locations (ListLocations), Orders (ListOrders, GetOrder), Products (ListProducts, GetProduct, FindVariantsBySku, AddProductImage), Shop (GetShop), Transfers (ListInventoryTransfers, GetInventoryTransfer, CreateInventoryTransfer, MarkTransferReadyToShip, ReceiveInventoryShipment).",
+        "tags": [
+          "GraphQL"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GraphqlRequest"
+              },
+              "examples": {
+                "GetShop": {
+                  "summary": "[Shop] Shop name, currency, plan and primary domain",
+                  "value": {
+                    "query": "query GetShop {\n  shop {\n    id\n    name\n    email\n    currencyCode\n    ianaTimezone\n    plan { publicDisplayName shopifyPlus }\n    primaryDomain { url }\n  }\n}\n",
+                    "variables": {}
+                  }
+                },
+                "ListLocations": {
+                  "summary": "[Locations] List locations (stores, warehouses)",
+                  "value": {
+                    "query": "query ListLocations($first: Int!, $after: String) {\n  locations(first: $first, after: $after, includeInactive: false) {\n    nodes {\n      id\n      name\n      isActive\n      fulfillsOnlineOrders\n      address { address1 city province countryCode zip }\n    }\n    pageInfo { hasNextPage endCursor }\n  }\n}\n",
+                    "variables": {
+                      "first": 50
+                    }
+                  }
+                },
+                "ListProducts": {
+                  "summary": "[Products] List products with variants, SKUs and featured image",
+                  "value": {
+                    "query": "query ListProducts($first: Int!, $after: String, $query: String) {\n  products(first: $first, after: $after, query: $query) {\n    nodes {\n      id\n      title\n      handle\n      status\n      vendor\n      productType\n      tags\n      updatedAt\n      featuredMedia { preview { image { url altText } } }\n      variants(first: 100) {\n        nodes { id title sku price barcodes(first: 5) { nodes { type value } } inventoryItem { id } }\n      }\n    }\n    pageInfo { hasNextPage endCursor }\n  }\n}\n",
+                    "variables": {
+                      "first": 25,
+                      "query": "status:active"
+                    }
+                  }
+                },
+                "GetProduct": {
+                  "summary": "[Products] One product with all images and variants",
+                  "value": {
+                    "query": "query GetProduct($id: ID!) {\n  product(id: $id) {\n    id\n    title\n    descriptionHtml\n    status\n    vendor\n    productType\n    tags\n    media(first: 50) {\n      nodes {\n        id\n        mediaContentType\n        ... on MediaImage { image { url altText width height } }\n      }\n    }\n    variants(first: 100) {\n      nodes { id title sku price compareAtPrice barcodes(first: 5) { nodes { type value } } inventoryItem { id tracked } }\n    }\n  }\n}\n",
+                    "variables": {
+                      "id": "gid://shopify/Product/1234567890"
+                    }
+                  }
+                },
+                "FindVariantsBySku": {
+                  "summary": "[Products] Find variants by SKU or barcode (search syntax, e.g. \"barcode:0123\")",
+                  "value": {
+                    "query": "query FindVariantsBySku($query: String!, $first: Int!) {\n  productVariants(first: $first, query: $query) {\n    nodes {\n      id\n      sku\n      barcodes(first: 5) { nodes { type value } }\n      displayName\n      product { id title }\n      inventoryItem { id }\n    }\n  }\n}\n",
+                    "variables": {
+                      "query": "sku:ABC-123",
+                      "first": 10
+                    }
+                  }
+                },
+                "AddProductImage": {
+                  "summary": "[Products] Add an image to a product from a public URL",
+                  "value": {
+                    "query": "mutation AddProductImage($productId: ID!, $media: [CreateMediaInput!]!) {\n  productUpdate(product: { id: $productId }, media: $media) {\n    product {\n      id\n      media(first: 10) { nodes { id status mediaContentType } }\n    }\n    userErrors { field message }\n  }\n}\n",
+                    "variables": {
+                      "productId": "gid://shopify/Product/1234567890",
+                      "media": [
+                        {
+                          "originalSource": "https://example.com/images/shirt-front.jpg",
+                          "alt": "Shirt, front",
+                          "mediaContentType": "IMAGE"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "ListInventoryAtLocation": {
+                  "summary": "[Inventory] Stock levels (available, on hand, committed, incoming) at one location",
+                  "value": {
+                    "query": "query ListInventoryAtLocation($locationId: ID!, $first: Int!, $after: String) {\n  location(id: $locationId) {\n    id\n    name\n    inventoryLevels(first: $first, after: $after) {\n      nodes {\n        id\n        item { id sku tracked variants(first: 1) { nodes { id displayName } } }\n        quantities(names: [\"available\", \"on_hand\", \"committed\", \"incoming\"]) { name quantity }\n      }\n      pageInfo { hasNextPage endCursor }\n    }\n  }\n}\n",
+                    "variables": {
+                      "locationId": "gid://shopify/Location/1234567890",
+                      "first": 100
+                    }
+                  }
+                },
+                "GetInventoryItem": {
+                  "summary": "[Inventory] One inventory item with its stock at every location",
+                  "value": {
+                    "query": "query GetInventoryItem($id: ID!) {\n  inventoryItem(id: $id) {\n    id\n    sku\n    tracked\n    unitCost { amount currencyCode }\n    variants(first: 1) { nodes { id displayName } }\n    inventoryLevels(first: 50) {\n      nodes {\n        location { id name }\n        quantities(names: [\"available\", \"on_hand\"]) { name quantity }\n      }\n    }\n  }\n}\n",
+                    "variables": {
+                      "id": "gid://shopify/InventoryItem/1234567890"
+                    }
+                  }
+                },
+                "AdjustInventory": {
+                  "summary": "[Inventory] Change stock by a delta (e.g. +5 received, -2 damaged)",
+                  "value": {
+                    "query": "mutation AdjustInventory($input: InventoryAdjustQuantitiesInput!) {\n  inventoryAdjustQuantities(input: $input) {\n    inventoryAdjustmentGroup {\n      createdAt\n      reason\n      changes { name delta quantityAfterChange item { id } location { id } }\n    }\n    userErrors { field message }\n  }\n}\n",
+                    "variables": {
+                      "input": {
+                        "reason": "correction",
+                        "name": "available",
+                        "changes": [
+                          {
+                            "delta": 5,
+                            "inventoryItemId": "gid://shopify/InventoryItem/1234567890",
+                            "locationId": "gid://shopify/Location/1234567890"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "SetInventory": {
+                  "summary": "[Inventory] Set absolute stock (e.g. after a count); changeFromQuantity guards against races",
+                  "value": {
+                    "query": "mutation SetInventory($input: InventorySetQuantitiesInput!) {\n  inventorySetQuantities(input: $input) {\n    inventoryAdjustmentGroup {\n      reason\n      changes { name delta quantityAfterChange }\n    }\n    userErrors { field message }\n  }\n}\n",
+                    "variables": {
+                      "input": {
+                        "reason": "cycle_count_available",
+                        "name": "available",
+                        "quantities": [
+                          {
+                            "inventoryItemId": "gid://shopify/InventoryItem/1234567890",
+                            "locationId": "gid://shopify/Location/1234567890",
+                            "quantity": 12,
+                            "changeFromQuantity": 10
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "ListInventoryTransfers": {
+                  "summary": "[Transfers] List stock transfers between locations",
+                  "value": {
+                    "query": "query ListInventoryTransfers($first: Int!, $after: String, $query: String) {\n  inventoryTransfers(first: $first, after: $after, query: $query) {\n    nodes {\n      id\n      name\n      status\n      referenceName\n      dateCreated\n      totalQuantity\n      receivedQuantity\n      origin { name location { id } }\n      destination { name location { id } }\n    }\n    pageInfo { hasNextPage endCursor }\n  }\n}\n",
+                    "variables": {
+                      "first": 25
+                    }
+                  }
+                },
+                "GetInventoryTransfer": {
+                  "summary": "[Transfers] One transfer with line items and shipments",
+                  "value": {
+                    "query": "query GetInventoryTransfer($id: ID!) {\n  inventoryTransfer(id: $id) {\n    id\n    name\n    status\n    note\n    origin { name location { id } }\n    destination { name location { id } }\n    lineItems(first: 100) {\n      nodes { id title totalQuantity shippedQuantity inventoryItem { id sku } }\n    }\n    shipments(first: 10) {\n      nodes { id name status totalReceivedQuantity }\n    }\n  }\n}\n",
+                    "variables": {
+                      "id": "gid://shopify/InventoryTransfer/1234567890"
+                    }
+                  }
+                },
+                "CreateInventoryTransfer": {
+                  "summary": "[Transfers] Create a draft transfer between two locations",
+                  "value": {
+                    "query": "mutation CreateInventoryTransfer($input: InventoryTransferCreateInput!) {\n  inventoryTransferCreate(input: $input) {\n    inventoryTransfer { id name status totalQuantity }\n    userErrors { field message }\n  }\n}\n",
+                    "variables": {
+                      "input": {
+                        "originLocationId": "gid://shopify/Location/1111111111",
+                        "destinationLocationId": "gid://shopify/Location/2222222222",
+                        "referenceName": "Restock store 2",
+                        "lineItems": [
+                          {
+                            "inventoryItemId": "gid://shopify/InventoryItem/1234567890",
+                            "quantity": 10
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "MarkTransferReadyToShip": {
+                  "summary": "[Transfers] Move a draft transfer to ready-to-ship",
+                  "value": {
+                    "query": "mutation MarkTransferReadyToShip($id: ID!) {\n  inventoryTransferMarkAsReadyToShip(id: $id) {\n    inventoryTransfer { id status }\n    userErrors { field message }\n  }\n}\n",
+                    "variables": {
+                      "id": "gid://shopify/InventoryTransfer/1234567890"
+                    }
+                  }
+                },
+                "ReceiveInventoryShipment": {
+                  "summary": "[Transfers] Receive items on a transfer's shipment",
+                  "value": {
+                    "query": "mutation ReceiveInventoryShipment($id: ID!, $lineItems: [InventoryShipmentReceiveItemInput!]) {\n  inventoryShipmentReceive(id: $id, lineItems: $lineItems) {\n    inventoryShipment { id status totalReceivedQuantity }\n    userErrors { field message }\n  }\n}\n",
+                    "variables": {
+                      "id": "gid://shopify/InventoryShipment/1234567890",
+                      "lineItems": [
+                        {
+                          "shipmentLineItemId": "gid://shopify/InventoryShipmentLineItem/1234567890",
+                          "quantity": 10,
+                          "reason": "ACCEPTED"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "ListOrders": {
+                  "summary": "[Orders] List orders (last 60 days unless read_all_orders is granted)",
+                  "value": {
+                    "query": "query ListOrders($first: Int!, $after: String, $query: String) {\n  orders(first: $first, after: $after, query: $query, sortKey: CREATED_AT, reverse: true) {\n    nodes {\n      id\n      name\n      createdAt\n      displayFinancialStatus\n      displayFulfillmentStatus\n      totalPriceSet { shopMoney { amount currencyCode } }\n      customer { id displayName }\n      lineItems(first: 50) {\n        nodes { id title sku quantity variant { id } }\n      }\n    }\n    pageInfo { hasNextPage endCursor }\n  }\n}\n",
+                    "variables": {
+                      "first": 25,
+                      "query": "created_at:>=2026-10-01"
+                    }
+                  }
+                },
+                "GetOrder": {
+                  "summary": "[Orders] One order with lines, addresses and fulfillments",
+                  "value": {
+                    "query": "query GetOrder($id: ID!) {\n  order(id: $id) {\n    id\n    name\n    createdAt\n    cancelledAt\n    displayFinancialStatus\n    displayFulfillmentStatus\n    currencyCode\n    subtotalPriceSet { shopMoney { amount currencyCode } }\n    totalTaxSet { shopMoney { amount currencyCode } }\n    totalPriceSet { shopMoney { amount currencyCode } }\n    customer { id displayName defaultEmailAddress { emailAddress } }\n    shippingAddress { address1 city province countryCodeV2 zip }\n    lineItems(first: 100) {\n      nodes {\n        id\n        title\n        sku\n        quantity\n        originalUnitPriceSet { shopMoney { amount currencyCode } }\n        variant { id inventoryItem { id } }\n      }\n    }\n    fulfillments { id status createdAt location { id name } }\n  }\n}\n",
+                    "variables": {
+                      "id": "gid://shopify/Order/1234567890"
+                    }
+                  }
+                },
+                "ListCustomers": {
+                  "summary": "[Customers] List or search customers",
+                  "value": {
+                    "query": "query ListCustomers($first: Int!, $after: String, $query: String) {\n  customers(first: $first, after: $after, query: $query) {\n    nodes {\n      id\n      displayName\n      defaultEmailAddress { emailAddress }\n      defaultPhoneNumber { phoneNumber }\n      numberOfOrders\n      amountSpent { amount currencyCode }\n      tags\n      updatedAt\n    }\n    pageInfo { hasNextPage endCursor }\n  }\n}\n",
+                    "variables": {
+                      "first": 25,
+                      "query": "email:*@example.com"
+                    }
+                  }
+                },
+                "GetCustomer": {
+                  "summary": "[Customers] One customer with addresses",
+                  "value": {
+                    "query": "query GetCustomer($id: ID!) {\n  customer(id: $id) {\n    id\n    firstName\n    lastName\n    displayName\n    defaultEmailAddress { emailAddress }\n    defaultPhoneNumber { phoneNumber }\n    note\n    tags\n    defaultAddress { address1 city province countryCodeV2 zip }\n    addressesV2(first: 10) { nodes { id address1 city countryCodeV2 zip } }\n  }\n}\n",
+                    "variables": {
+                      "id": "gid://shopify/Customer/1234567890"
+                    }
+                  }
+                },
+                "CreateCustomer": {
+                  "summary": "[Customers] Create a customer",
+                  "value": {
+                    "query": "mutation CreateCustomer($input: CustomerInput!) {\n  customerCreate(input: $input) {\n    customer { id displayName }\n    userErrors { field message }\n  }\n}\n",
+                    "variables": {
+                      "input": {
+                        "firstName": "Jane",
+                        "lastName": "Doe",
+                        "email": "jane.doe@example.com",
+                        "tags": [
+                          "wholesale"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "UpdateCustomer": {
+                  "summary": "[Customers] Update a customer (send id plus the fields to change)",
+                  "value": {
+                    "query": "mutation UpdateCustomer($input: CustomerInput!) {\n  customerUpdate(input: $input) {\n    customer { id displayName note tags }\n    userErrors { field message }\n  }\n}\n",
+                    "variables": {
+                      "input": {
+                        "id": "gid://shopify/Customer/1234567890",
+                        "note": "Prefers email contact"
+                      }
+                    }
+                  }
+                },
+                "ListGiftCards": {
+                  "summary": "[GiftCards] List gift cards with balances",
+                  "value": {
+                    "query": "query ListGiftCards($first: Int!, $after: String, $query: String) {\n  giftCards(first: $first, after: $after, query: $query) {\n    nodes {\n      id\n      lastCharacters\n      enabled\n      expiresOn\n      balance { amount currencyCode }\n      initialValue { amount currencyCode }\n      customer { id displayName }\n    }\n    pageInfo { hasNextPage endCursor }\n  }\n}\n",
+                    "variables": {
+                      "first": 25,
+                      "query": "status:enabled"
+                    }
+                  }
+                },
+                "GetGiftCard": {
+                  "summary": "[GiftCards] One gift card with its transactions",
+                  "value": {
+                    "query": "query GetGiftCard($id: ID!) {\n  giftCard(id: $id) {\n    id\n    maskedCode\n    enabled\n    balance { amount currencyCode }\n    transactions(first: 50) {\n      nodes { id amount { amount currencyCode } processedAt note }\n    }\n  }\n}\n",
+                    "variables": {
+                      "id": "gid://shopify/GiftCard/1234567890"
+                    }
+                  }
+                },
+                "CreateGiftCard": {
+                  "summary": "[GiftCards] Issue a gift card (the full code is returned only here, once)",
+                  "value": {
+                    "query": "mutation CreateGiftCard($input: GiftCardCreateInput!) {\n  giftCardCreate(input: $input) {\n    giftCard { id lastCharacters balance { amount currencyCode } }\n    giftCardCode\n    userErrors { field message code }\n  }\n}\n",
+                    "variables": {
+                      "input": {
+                        "initialAmount": {
+                          "amount": "25.00",
+                          "currencyCode": "USD"
+                        },
+                        "note": "Issued by agent"
+                      }
+                    }
+                  }
+                },
+                "CreditGiftCard": {
+                  "summary": "[GiftCards] Add value to a gift card",
+                  "value": {
+                    "query": "mutation CreditGiftCard($id: ID!, $creditInput: GiftCardCreditInput!) {\n  giftCardCredit(id: $id, creditInput: $creditInput) {\n    giftCardCreditTransaction { id amount { amount currencyCode } giftCard { id balance { amount } } }\n    userErrors { field message code }\n  }\n}\n",
+                    "variables": {
+                      "id": "gid://shopify/GiftCard/1234567890",
+                      "creditInput": {
+                        "creditAmount": {
+                          "amount": "10.00",
+                          "currencyCode": "USD"
+                        },
+                        "note": "Goodwill credit"
+                      }
+                    }
+                  }
+                },
+                "DebitGiftCard": {
+                  "summary": "[GiftCards] Take value off a gift card",
+                  "value": {
+                    "query": "mutation DebitGiftCard($id: ID!, $debitInput: GiftCardDebitInput!) {\n  giftCardDebit(id: $id, debitInput: $debitInput) {\n    giftCardDebitTransaction { id amount { amount currencyCode } giftCard { id balance { amount } } }\n    userErrors { field message code }\n  }\n}\n",
+                    "variables": {
+                      "id": "gid://shopify/GiftCard/1234567890",
+                      "debitInput": {
+                        "debitAmount": {
+                          "amount": "5.00",
+                          "currencyCode": "USD"
+                        }
+                      }
+                    }
+                  }
+                },
+                "DeactivateGiftCard": {
+                  "summary": "[GiftCards] Permanently deactivate a gift card",
+                  "value": {
+                    "query": "mutation DeactivateGiftCard($id: ID!) {\n  giftCardDeactivate(id: $id) {\n    giftCard { id enabled deactivatedAt }\n    userErrors { field message code }\n  }\n}\n",
+                    "variables": {
+                      "id": "gid://shopify/GiftCard/1234567890"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "GraphQL result. Errors appear in `errors` (query problems) or `data.<mutation>.userErrors` (business rules).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphqlResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "402": {
+            "description": "Shop is frozen or unpaid"
+          },
+          "403": {
+            "description": "App lacks a required access scope or protected-data approval"
+          },
+          "429": {
+            "description": "Rate limited; see extensions.cost.throttleStatus"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "accessToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Shopify-Access-Token",
+        "description": "Offline access token from OAuth. Authorize: https://{shop}.myshopify.com/admin/oauth/authorize · Token: https://{shop}.myshopify.com/admin/oauth/access_token"
+      }
+    },
+    "schemas": {
+      "GraphqlRequest": {
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "GraphQL document"
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "operationName": {
+            "type": "string"
+          }
+        }
+      },
+      "GraphqlResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GraphqlError"
+            }
+          },
+          "extensions": {
+            "type": "object",
+            "properties": {
+              "cost": {
+                "$ref": "#/components/schemas/QueryCost"
+              }
+            }
+          }
+        }
+      },
+      "GraphqlError": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "column": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "extensions": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "QueryCost": {
+        "type": "object",
+        "properties": {
+          "requestedQueryCost": {
+            "type": "number"
+          },
+          "actualQueryCost": {
+            "type": "number"
+          },
+          "throttleStatus": {
+            "type": "object",
+            "properties": {
+              "maximumAvailable": {
+                "type": "number"
+              },
+              "currentlyAvailable": {
+                "type": "number"
+              },
+              "restoreRate": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

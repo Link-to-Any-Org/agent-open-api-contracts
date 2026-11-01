@@ -1,0 +1,48 @@
+# Shopify REST Admin endpoints included in specs/shopify/rest/openapi.json.
+# Key: doc page slug at https://shopify.dev/docs/api/admin-rest/<version>/resources/<slug>.md
+# Value: "METHOD path" exactly as the page's Endpoints list shows it (without /admin/api/<version>).
+# Rebuild: python3 scripts/build_shopify_rest.py
+#
+# Product and variant writes are left out on purpose: they are GraphQL-only for new apps
+# (use productUpdate / productVariantsBulkUpdate from specs/shopify/graphql).
+
+shop:
+  - GET /shop.json
+location:
+  - GET /locations.json
+  - GET /locations/{location_id}.json
+  - GET /locations/{location_id}/inventory_levels.json
+product:
+  - GET /products.json
+  - GET /products/{product_id}.json
+  - GET /products/count.json
+product-image:
+  - GET /products/{product_id}/images.json
+  - GET /products/{product_id}/images/{image_id}.json
+  - POST /products/{product_id}/images.json
+  - DELETE /products/{product_id}/images/{image_id}.json
+inventoryitem:
+  - GET /inventory_items.json
+  - GET /inventory_items/{inventory_item_id}.json
+inventorylevel:
+  - GET /inventory_levels.json
+  - POST /inventory_levels/adjust.json
+  - POST /inventory_levels/set.json
+order:
+  - GET /orders.json
+  - GET /orders/{order_id}.json
+  - GET /orders/count.json
+customer:
+  - GET /customers.json
+  - GET /customers/search.json
+  - GET /customers/{customer_id}.json
+  - GET /customers/{customer_id}/orders.json
+  - POST /customers.json
+  - PUT /customers/{customer_id}.json
+gift-card:
+  - GET /gift_cards.json
+  - GET /gift_cards/search.json
+  - GET /gift_cards/{gift_card_id}.json
+  - POST /gift_cards.json
+  - PUT /gift_cards/{gift_card_id}.json
+  - POST /gift_cards/{gift_card_id}/disable.json

@@ -3,7 +3,7 @@
 OpenAPI contracts for the commerce platforms the LINK! agent (link engine service v2) connects to.
 Each spec is uploaded (or linked) in the agent app's **Add a System** form so the agent knows which endpoints exist.
 
-> **Status: in progress.** Square, Lightspeed X-Series and QuickBooks Online have spec files so far. Each platform folder has a `SOURCE.md`
+> **Status: in progress.** Shopify, Square, Lightspeed X-Series and QuickBooks Online have spec files so far. Each platform folder has a `SOURCE.md`
 > that records where its spec comes from, how auth works, and what is still unverified.
 
 ## Layout
@@ -11,20 +11,24 @@ Each spec is uploaded (or linked) in the agent app's **Add a System** form so th
 ```
 agent-open-api-contracts/
 ├── README.md                 # this file: status table, rules, how to add a spec
+├── package.json              # `npm run lint`, `npm run validate:shopify` (installs graphql)
 ├── redocly.yaml              # lint rules for every spec
 ├── scripts/
 │   ├── lint.sh               # lints templates/ and every specs/*/openapi.* file
 │   ├── trim_openapi.py       # cuts an official spec down to chosen tags
 │   ├── merge_openapi.py      # joins per-endpoint specs into one (fails on conflicts)
 │   ├── build_x_series.sh     # re-downloads + merges the X-Series spec
-│   └── build_quickbooks_online.py  # QBO: base paths + schemas from Intuit XSDs
+│   ├── build_quickbooks_online.py  # QBO: base paths + schemas from Intuit XSDs
+│   ├── build_shopify_graphql.py    # Shopify GraphQL: operations.yaml -> openapi.json
+│   ├── validate_shopify_graphql.mjs # checks every Shopify operation against the live schema
+│   └── build_shopify_rest.py       # Shopify REST: built from the REST reference pages
 ├── templates/
 │   ├── SOURCE.md             # copy into a new platform folder
 │   └── openapi.yaml          # minimal valid OpenAPI 3.0 skeleton
 └── specs/
     └── <platform>/
         ├── SOURCE.md         # source URL, license, auth, base URL, scopes, open questions
-        └── openapi.json|yaml # the contract (added per platform)
+        └── openapi.json|yaml # the contract (Shopify has graphql/ and rest/ subfolders)
 ```
 
 Folder names are lowercase kebab-case. One folder per platform, one `openapi.*` file per folder.
@@ -35,7 +39,7 @@ Callback URL for every OAuth app: `https://agent.linktoany.com/oauth/callback`
 
 | Platform | Folder | Auth | Dev app | Upstream spec | In repo | Callback URL |
 |---|---|---|---|---|---|---|
-| Shopify | `specs/shopify` | OAuth 2.0 | Done | None official (GraphQL Admin; REST is legacy) | No | Yes |
+| Shopify | `specs/shopify` | OAuth 2.0 | Done | None; GraphQL checked against live schema, REST built from docs | **Yes** (GraphQL 27 ops + REST 31 ops) | Yes |
 | Square | `specs/square` | OAuth 2.0 | Done | **Official** (Apache-2.0) | **Yes** (trimmed, 70 ops) | Yes |
 | Lightspeed X-Series | `specs/lightspeed-x-series` | OAuth 2.0 | Done | Per-endpoint only (Apache-2.0): merged | **Yes** (71 ops) | Yes |
 | Lightspeed R-Series | `specs/lightspeed-r-series` | OAuth 2.0 | Done | None official | No | Yes |
@@ -91,3 +95,4 @@ A spec only needs the endpoints for these, not the whole upstream API.
 ```
 
 Runs a pinned Redocly CLI through `npx` (needs Node and network on first run).
+Shopify GraphQL operations also need `npm install` once, then `npm run validate:shopify`.
