@@ -3,7 +3,7 @@
 OpenAPI contracts for the commerce platforms the LINK! agent (link engine service v2) connects to.
 Each spec is uploaded (or linked) in the agent app's **Add a System** form so the agent knows which endpoints exist.
 
-> **Status: in progress.** Square and Lightspeed X-Series have spec files so far. Each platform folder has a `SOURCE.md`
+> **Status: in progress.** Square, Lightspeed X-Series and QuickBooks Online have spec files so far. Each platform folder has a `SOURCE.md`
 > that records where its spec comes from, how auth works, and what is still unverified.
 
 ## Layout
@@ -16,7 +16,8 @@ agent-open-api-contracts/
 │   ├── lint.sh               # lints templates/ and every specs/*/openapi.* file
 │   ├── trim_openapi.py       # cuts an official spec down to chosen tags
 │   ├── merge_openapi.py      # joins per-endpoint specs into one (fails on conflicts)
-│   └── build_x_series.sh     # re-downloads + merges the X-Series spec
+│   ├── build_x_series.sh     # re-downloads + merges the X-Series spec
+│   └── build_quickbooks_online.py  # QBO: base paths + schemas from Intuit XSDs
 ├── templates/
 │   ├── SOURCE.md             # copy into a new platform folder
 │   └── openapi.yaml          # minimal valid OpenAPI 3.0 skeleton
@@ -43,7 +44,7 @@ Callback URL for every OAuth app: `https://agent.linktoany.com/oauth/callback`
 | Cin7 Core | `specs/cin7-core` | API key | Ask Sandesh | Apiary docs (verify format) | No | N/A |
 | Cin7 Omni | `specs/cin7-omni` | API key (verify) | Ask Sandesh | Unknown | No | N/A |
 | Unleashed | `specs/unleashed` | API ID + key, signed requests | Needs trial account | None found | No | N/A |
-| QuickBooks Online | `specs/quickbooks-online` | OAuth 2.0 | Done (development keys) | None official | No | Yes |
+| QuickBooks Online | `specs/quickbooks-online` | OAuth 2.0 | Done (development keys) | None; schemas from Intuit's official XSDs | **Yes** (24 ops) | Yes |
 
 Focus resources for every platform: **inventory, orders, customers, gift cards, locations, consignments, images.**
 A spec only needs the endpoints for these, not the whole upstream API.

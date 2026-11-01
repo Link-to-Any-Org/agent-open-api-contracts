@@ -1,0 +1,964 @@
+openapi: 3.0.3
+info:
+  title: QuickBooks Online Accounting API v3 (agent contract)
+  version: 3 (minorversion 75)
+  description: 'Hand-written paths for the LINK! agent. Entity schemas are generated from Intuit''s official XSDs
+    by scripts/build_quickbooks_online.py; do not edit openapi.json by hand, edit openapi.base.yaml and rebuild.
+    Send `Accept: application/json`.'
+externalDocs:
+  url: https://developer.intuit.com/app/developer/qbo/docs/api/accounting/all-entities/account
+servers:
+- url: https://quickbooks.api.intuit.com/v3/company/{realmId}
+  description: Production
+  variables:
+    realmId:
+      default: '0'
+      description: Company ID, returned on the OAuth callback
+- url: https://sandbox-quickbooks.api.intuit.com/v3/company/{realmId}
+  description: Sandbox
+  variables:
+    realmId:
+      default: '0'
+      description: Sandbox company ID
+security:
+- oauth2:
+  - com.intuit.quickbooks.accounting
+tags:
+- name: Attachments
+  description: Files and notes linked to entities (product images)
+- name: Company
+  description: Company settings
+- name: Customers
+  description: Customers
+- name: Inventory
+  description: Items and quantity adjustments
+- name: Locations
+  description: Departments (location tracking)
+- name: Orders
+  description: Invoices, sales receipts, estimates, purchase orders
+- name: Query
+  description: Query and change-data-capture
+- name: Vendors
+  description: Vendors
+paths:
+  /item:
+    post:
+      operationId: createOrUpdateItem
+      summary: Create or update item (product or service; Type=Inventory tracks QtyOnHand)
+      description: 'Creates a item. To update, send `Id` and the current `SyncToken`; add `"sparse": true` to change
+        only the fields sent. These cannot be deleted; set `Active` to false instead.'
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/minorversion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+      responses:
+        '200':
+          description: The saved Item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemEnvelope'
+        '400': &id001
+          description: Validation or business-rule error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+        '401': &id002
+          description: Missing or expired access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+        '403': &id003
+          description: Token lacks access to this company or feature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+  /item/{id}:
+    get:
+      operationId: getItem
+      summary: Get a single item
+      tags:
+      - Inventory
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: The Item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+  /inventoryadjustment:
+    post:
+      operationId: createOrUpdateInventoryAdjustment
+      summary: Create or update inventory adjustment (verify availability on your minorversion)
+      description: 'Creates a inventory adjustment. To update, send `Id` and the current `SyncToken`; add `"sparse":
+        true` to change only the fields sent.'
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/minorversion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryAdjustment'
+      responses:
+        '200':
+          description: The saved InventoryAdjustment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryAdjustmentEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /inventoryadjustment/{id}:
+    get:
+      operationId: getInventoryAdjustment
+      summary: Get a single inventory adjustment
+      tags:
+      - Inventory
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: The InventoryAdjustment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryAdjustmentEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+  /customer:
+    post:
+      operationId: createOrUpdateCustomer
+      summary: Create or update customer
+      description: 'Creates a customer. To update, send `Id` and the current `SyncToken`; add `"sparse": true` to
+        change only the fields sent. These cannot be deleted; set `Active` to false instead.'
+      tags:
+      - Customers
+      parameters:
+      - $ref: '#/components/parameters/minorversion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Customer'
+      responses:
+        '200':
+          description: The saved Customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /customer/{id}:
+    get:
+      operationId: getCustomer
+      summary: Get a single customer
+      tags:
+      - Customers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: The Customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+  /vendor:
+    post:
+      operationId: createOrUpdateVendor
+      summary: Create or update vendor (supplier on purchase orders)
+      description: 'Creates a vendor. To update, send `Id` and the current `SyncToken`; add `"sparse": true` to
+        change only the fields sent. These cannot be deleted; set `Active` to false instead.'
+      tags:
+      - Vendors
+      parameters:
+      - $ref: '#/components/parameters/minorversion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Vendor'
+      responses:
+        '200':
+          description: The saved Vendor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /vendor/{id}:
+    get:
+      operationId: getVendor
+      summary: Get a single vendor
+      tags:
+      - Vendors
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: The Vendor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+  /invoice:
+    post:
+      operationId: createOrUpdateInvoice
+      summary: Create or update invoice
+      description: 'Creates a invoice. To update, send `Id` and the current `SyncToken`; add `"sparse": true` to
+        change only the fields sent. With `operation=delete|void`, send only `Id` and `SyncToken` to delete or void
+        it.'
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/minorversion'
+      - name: operation
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - delete
+          - void
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Invoice'
+      responses:
+        '200':
+          description: The saved Invoice
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /invoice/{id}:
+    get:
+      operationId: getInvoice
+      summary: Get a single invoice
+      tags:
+      - Orders
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: The Invoice
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+  /salesreceipt:
+    post:
+      operationId: createOrUpdateSalesReceipt
+      summary: Create or update sales receipt
+      description: 'Creates a sales receipt. To update, send `Id` and the current `SyncToken`; add `"sparse": true`
+        to change only the fields sent. With `operation=delete|void`, send only `Id` and `SyncToken` to delete or
+        void it.'
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/minorversion'
+      - name: operation
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - delete
+          - void
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalesReceipt'
+      responses:
+        '200':
+          description: The saved SalesReceipt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesReceiptEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /salesreceipt/{id}:
+    get:
+      operationId: getSalesReceipt
+      summary: Get a single sales receipt
+      tags:
+      - Orders
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: The SalesReceipt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesReceiptEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+  /estimate:
+    post:
+      operationId: createOrUpdateEstimate
+      summary: Create or update estimate
+      description: 'Creates a estimate. To update, send `Id` and the current `SyncToken`; add `"sparse": true` to
+        change only the fields sent. With `operation=delete`, send only `Id` and `SyncToken` to delete it.'
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/minorversion'
+      - name: operation
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - delete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Estimate'
+      responses:
+        '200':
+          description: The saved Estimate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstimateEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /estimate/{id}:
+    get:
+      operationId: getEstimate
+      summary: Get a single estimate
+      tags:
+      - Orders
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: The Estimate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstimateEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+  /purchaseorder:
+    post:
+      operationId: createOrUpdatePurchaseOrder
+      summary: Create or update purchase order
+      description: 'Creates a purchase order. To update, send `Id` and the current `SyncToken`; add `"sparse": true`
+        to change only the fields sent. With `operation=delete`, send only `Id` and `SyncToken` to delete it.'
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/minorversion'
+      - name: operation
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - delete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrder'
+      responses:
+        '200':
+          description: The saved PurchaseOrder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /purchaseorder/{id}:
+    get:
+      operationId: getPurchaseOrder
+      summary: Get a single purchase order
+      tags:
+      - Orders
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: The PurchaseOrder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+  /department:
+    post:
+      operationId: createOrUpdateDepartment
+      summary: Create or update department (QBO 'location tracking')
+      description: 'Creates a department. To update, send `Id` and the current `SyncToken`; add `"sparse": true`
+        to change only the fields sent. These cannot be deleted; set `Active` to false instead.'
+      tags:
+      - Locations
+      parameters:
+      - $ref: '#/components/parameters/minorversion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Department'
+      responses:
+        '200':
+          description: The saved Department
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /department/{id}:
+    get:
+      operationId: getDepartment
+      summary: Get a single department
+      tags:
+      - Locations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: The Department
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+  /attachable:
+    post:
+      operationId: createOrUpdateAttachable
+      summary: Create or update attachable (file or note linked to an entity)
+      description: 'Creates a attachable. To update, send `Id` and the current `SyncToken`; add `"sparse": true`
+        to change only the fields sent. With `operation=delete`, send only `Id` and `SyncToken` to delete it.'
+      tags:
+      - Attachments
+      parameters:
+      - $ref: '#/components/parameters/minorversion'
+      - name: operation
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - delete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Attachable'
+      responses:
+        '200':
+          description: The saved Attachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachableEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /attachable/{id}:
+    get:
+      operationId: getAttachable
+      summary: Get a single attachable
+      tags:
+      - Attachments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: The Attachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachableEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEnvelope'
+  /query:
+    get:
+      operationId: query
+      summary: Query entities with QBO's SQL-like language
+      description: 'Example: `SELECT * FROM Item WHERE Type = ''Inventory'' STARTPOSITION 1 MAXRESULTS 100`. Works
+        for every entity in this spec. Max 1000 rows per page.'
+      tags:
+      - Query
+      parameters:
+      - name: query
+        in: query
+        required: true
+        schema:
+          type: string
+        example: SELECT * FROM Customer WHERE Active = true MAXRESULTS 100
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: Matching entities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResult'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /cdc:
+    get:
+      operationId: changeDataCapture
+      summary: List entities changed since a time
+      description: Returns entities of the listed types changed in the last 30 days (max). Use for incremental sync.
+      tags:
+      - Query
+      parameters:
+      - name: entities
+        in: query
+        required: true
+        schema:
+          type: string
+        example: Item,Customer,Invoice
+      - name: changedSince
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: Changed entities, grouped by type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CdcResult'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /companyinfo/{companyId}:
+    get:
+      operationId: getCompanyInfo
+      summary: Get company info
+      tags:
+      - Company
+      parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Same value as realmId
+      - $ref: '#/components/parameters/minorversion'
+      responses:
+        '200':
+          description: Company info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  CompanyInfo:
+                    $ref: '#/components/schemas/CompanyInfo'
+                  time:
+                    type: string
+                    format: date-time
+        '400': *id001
+        '401': *id002
+        '403': *id003
+  /upload:
+    post:
+      operationId: uploadAttachment
+      summary: Upload a file (e.g. product image) and link it to an entity
+      description: 'Multipart form: part `file_metadata_01` is an Attachable JSON (set `AttachableRef` to link it),
+        part `file_content_01` is the file.'
+      tags:
+      - Attachments
+      parameters:
+      - $ref: '#/components/parameters/minorversion'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file_metadata_01:
+                  type: string
+                  description: Attachable as JSON
+                file_content_01:
+                  type: string
+                  format: binary
+              required:
+              - file_metadata_01
+              - file_content_01
+      responses:
+        '200':
+          description: Upload result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  AttachableResponse:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Attachable:
+                          $ref: '#/components/schemas/Attachable'
+                        Fault:
+                          $ref: '#/components/schemas/Fault'
+                  time:
+                    type: string
+                    format: date-time
+        '400': *id001
+        '401': *id002
+        '403': *id003
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://appcenter.intuit.com/connect/oauth2
+          tokenUrl: https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer
+          refreshUrl: https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer
+          scopes:
+            com.intuit.quickbooks.accounting: Read and write accounting data
+  parameters:
+    minorversion:
+      name: minorversion
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 75
+      description: API minor version. Intuit retired 1-74 on 2025-08-01 and defaults to 75; send 75 or newer.
+  schemas:
+    ItemEnvelope:
+      type: object
+      properties:
+        Item:
+          $ref: '#/components/schemas/Item'
+        time:
+          type: string
+          format: date-time
+    InventoryAdjustmentEnvelope:
+      type: object
+      properties:
+        InventoryAdjustment:
+          $ref: '#/components/schemas/InventoryAdjustment'
+        time:
+          type: string
+          format: date-time
+    CustomerEnvelope:
+      type: object
+      properties:
+        Customer:
+          $ref: '#/components/schemas/Customer'
+        time:
+          type: string
+          format: date-time
+    VendorEnvelope:
+      type: object
+      properties:
+        Vendor:
+          $ref: '#/components/schemas/Vendor'
+        time:
+          type: string
+          format: date-time
+    InvoiceEnvelope:
+      type: object
+      properties:
+        Invoice:
+          $ref: '#/components/schemas/Invoice'
+        time:
+          type: string
+          format: date-time
+    SalesReceiptEnvelope:
+      type: object
+      properties:
+        SalesReceipt:
+          $ref: '#/components/schemas/SalesReceipt'
+        time:
+          type: string
+          format: date-time
+    EstimateEnvelope:
+      type: object
+      properties:
+        Estimate:
+          $ref: '#/components/schemas/Estimate'
+        time:
+          type: string
+          format: date-time
+    PurchaseOrderEnvelope:
+      type: object
+      properties:
+        PurchaseOrder:
+          $ref: '#/components/schemas/PurchaseOrder'
+        time:
+          type: string
+          format: date-time
+    DepartmentEnvelope:
+      type: object
+      properties:
+        Department:
+          $ref: '#/components/schemas/Department'
+        time:
+          type: string
+          format: date-time
+    AttachableEnvelope:
+      type: object
+      properties:
+        Attachable:
+          $ref: '#/components/schemas/Attachable'
+        time:
+          type: string
+          format: date-time
+    QueryResult:
+      type: object
+      properties:
+        QueryResponse:
+          type: object
+          properties: &id004
+            startPosition:
+              type: integer
+            maxResults:
+              type: integer
+            totalCount:
+              type: integer
+            Item:
+              type: array
+              items:
+                $ref: '#/components/schemas/Item'
+            InventoryAdjustment:
+              type: array
+              items:
+                $ref: '#/components/schemas/InventoryAdjustment'
+            Customer:
+              type: array
+              items:
+                $ref: '#/components/schemas/Customer'
+            Vendor:
+              type: array
+              items:
+                $ref: '#/components/schemas/Vendor'
+            Invoice:
+              type: array
+              items:
+                $ref: '#/components/schemas/Invoice'
+            SalesReceipt:
+              type: array
+              items:
+                $ref: '#/components/schemas/SalesReceipt'
+            Estimate:
+              type: array
+              items:
+                $ref: '#/components/schemas/Estimate'
+            PurchaseOrder:
+              type: array
+              items:
+                $ref: '#/components/schemas/PurchaseOrder'
+            Department:
+              type: array
+              items:
+                $ref: '#/components/schemas/Department'
+            Attachable:
+              type: array
+              items:
+                $ref: '#/components/schemas/Attachable'
+          description: Holds one array, named after the entity in the FROM clause.
+        time:
+          type: string
+          format: date-time
+    CdcResult:
+      type: object
+      properties:
+        CDCResponse:
+          type: array
+          items:
+            type: object
+            properties:
+              QueryResponse:
+                type: array
+                items:
+                  type: object
+                  properties: *id004
+        time:
+          type: string
+          format: date-time
+    FaultEnvelope:
+      type: object
+      properties:
+        Fault:
+          $ref: '#/components/schemas/Fault'
+        time:
+          type: string
+          format: date-time
