@@ -3,7 +3,7 @@
 OpenAPI contracts for the commerce platforms the LINK! agent (link engine service v2) connects to.
 Each spec is uploaded (or linked) in the agent app's **Add a System** form so the agent knows which endpoints exist.
 
-> **Status: scaffold only.** No spec files are in this repo yet. Each platform folder has a `SOURCE.md`
+> **Status: in progress.** Only Square has a spec file so far. Each platform folder has a `SOURCE.md`
 > that records where its spec comes from, how auth works, and what is still unverified.
 
 ## Layout
@@ -13,7 +13,8 @@ agent-open-api-contracts/
 ├── README.md                 # this file: status table, rules, how to add a spec
 ├── redocly.yaml              # lint rules for every spec
 ├── scripts/
-│   └── lint.sh               # lints templates/ and every specs/*/openapi.* file
+│   ├── lint.sh               # lints templates/ and every specs/*/openapi.* file
+│   └── trim_openapi.py       # cuts an official spec down to chosen tags
 ├── templates/
 │   ├── SOURCE.md             # copy into a new platform folder
 │   └── openapi.yaml          # minimal valid OpenAPI 3.0 skeleton
@@ -32,7 +33,7 @@ Callback URL for every OAuth app: `https://agent.linktoany.com/oauth/callback`
 | Platform | Folder | Auth | Dev app | Upstream spec | In repo | Callback URL |
 |---|---|---|---|---|---|---|
 | Shopify | `specs/shopify` | OAuth 2.0 | Done | None official (GraphQL Admin; REST is legacy) | No | Yes |
-| Square | `specs/square` | OAuth 2.0 | Done | **Official** (Apache-2.0) | No | Yes |
+| Square | `specs/square` | OAuth 2.0 | Done | **Official** (Apache-2.0) | **Yes** (trimmed, 70 ops) | Yes |
 | Lightspeed X-Series | `specs/lightspeed-x-series` | OAuth 2.0 | Done | Per-endpoint only: assemble from reference pages | No | Yes |
 | Lightspeed R-Series | `specs/lightspeed-r-series` | OAuth 2.0 | Done | None official | No | Yes |
 | Lightspeed K-Series | `specs/lightspeed-k-series` | OAuth 2.0 (verify) | **Blocked**: partner application | Unknown | No | Yes, once approved |
@@ -40,6 +41,7 @@ Callback URL for every OAuth app: `https://agent.linktoany.com/oauth/callback`
 | Cin7 Core | `specs/cin7-core` | API key | Ask Sandesh | Apiary docs (verify format) | No | N/A |
 | Cin7 Omni | `specs/cin7-omni` | API key (verify) | Ask Sandesh | Unknown | No | N/A |
 | Unleashed | `specs/unleashed` | API ID + key, signed requests | Needs trial account | None found | No | N/A |
+| QuickBooks Online | `specs/quickbooks-online` | OAuth 2.0 | Done (development keys) | None official | No | Yes |
 
 Focus resources for every platform: **inventory, orders, customers, gift cards, locations, consignments, images.**
 A spec only needs the endpoints for these, not the whole upstream API.
@@ -64,6 +66,14 @@ A spec only needs the endpoints for these, not the whole upstream API.
 3. Save it as `specs/<platform>/openapi.json` or `openapi.yaml`.
 4. Update `SOURCE.md`: source URL, upstream version, date pulled, what was trimmed, `(verify)` items cleared.
 5. Run `./scripts/lint.sh`, then update the status table above.
+
+## Versioning
+
+- One live spec per platform: `specs/<platform>/openapi.*` is the version the agent uses now.
+- The platform's own API version goes in `info.version` (or the version header noted in `SOURCE.md`).
+- A new upstream version replaces the file in place; git history keeps the old one.
+- Tag each released spec as `<platform>/<upstream-version>`, e.g. `square/2026-09-16`.
+- Use a versioned subfolder (`specs/<platform>/<version>/`) only if the agent must run two versions at once.
 
 ## Using a spec in the agent app
 

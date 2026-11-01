@@ -6,3 +6,15 @@ rules:
   operation-4xx-response: warn
   info-license: off
   no-server-example.com: error
+
+# Specs copied from a vendor keep the vendor's style. Silence style-only warnings
+# there so real errors stay visible; hand-written specs use the full rule set above.
+apis:
+  square:
+    root: specs/square/openapi.json
+    rules:
+      spec-ref-siblings: off
+      no-invalid-schema-examples: off
+      operation-4xx-response: off
+      tag-description: off
+      no-unused-components: off
