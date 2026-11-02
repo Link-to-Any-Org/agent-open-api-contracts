@@ -5,12 +5,15 @@ Each spec is uploaded (or linked) in the agent app's **Add a System** form so th
 
 > **Status: in progress.** Shopify, Square, Lightspeed X-Series and QuickBooks Online have spec files so far. Each platform folder has a `SOURCE.md`
 > that records where its spec comes from, how auth works, and what is still unverified.
+>
+> **Background, decisions, platform quirks and troubleshooting:** see [`KNOWLEDGE.md`](KNOWLEDGE.md).
 
 ## Layout
 
 ```
 agent-open-api-contracts/
 ├── README.md                 # this file: status table, rules, how to add a spec
+├── KNOWLEDGE.md              # why specs are built this way, platform quirks, troubleshooting, refresh checklist
 ├── package.json              # `npm run lint`, `npm run validate:shopify` (installs graphql)
 ├── redocly.yaml              # lint rules for every spec
 ├── scripts/
@@ -85,8 +88,8 @@ A spec only needs the endpoints for these, not the whole upstream API.
 ## Using a spec in the agent app
 
 - If **Add a System** accepts a file upload, upload `specs/<platform>/openapi.*` directly.
-- If it needs a URL, use the raw-file URL once this repo has a remote.
-  A private remote's raw URLs need auth, so check the agent app can fetch them before relying on that.
+- If it needs a URL, use the file's raw URL on GitHub (`Link-to-Any-Org/agent-open-api-contracts`).
+  The repo is private, so raw URLs need auth; check the agent app can fetch them before relying on that.
 
 ## Lint
 
