@@ -114,9 +114,10 @@ paths:
   /inventoryadjustment:
     post:
       operationId: createOrUpdateInventoryAdjustment
-      summary: Create or update inventory adjustment (verify availability on your minorversion)
-      description: 'Creates a inventory adjustment. To update, send `Id` and the current `SyncToken`; add `"sparse":
-        true` to change only the fields sent.'
+      summary: Create or update inventory adjustment
+      description: 'Creates an inventory adjustment. Intuit requires `DocNumber`, `AdjustAccountRef`, `Line` and
+        `TxnDate` on create. To update, send `Id` and the current `SyncToken`; add `"sparse": true` to change only
+        the fields sent.'
       tags:
       - Inventory
       parameters:

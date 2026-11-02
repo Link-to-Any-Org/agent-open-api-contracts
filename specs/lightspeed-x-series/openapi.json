@@ -3927,6 +3927,15 @@
         "operationId": "Search",
         "parameters": [
           {
+            "description": "Set to false to return matching entity ID strings without fetching full entity objects. Defaults to true; unparseable values also use true.",
+            "in": "query",
+            "name": "include_related",
+            "schema": {
+              "default": true,
+              "type": "boolean"
+            }
+          },
+          {
             "description": "The entity type to search for.",
             "in": "query",
             "name": "type",
@@ -3949,10 +3958,11 @@
             }
           },
           {
-            "description": "Sorting direction.",
+            "description": "Sorting direction. Defaults to descending order.",
             "in": "query",
             "name": "order_direction",
             "schema": {
+              "default": "desc",
               "enum": [
                 "asc",
                 "desc"
@@ -3961,10 +3971,13 @@
             }
           },
           {
-            "description": "The maximum number of objects to be included in the response, currently limited to 1000. Specifying more than 1000 will result in 1000 objects being returned.",
+            "description": "Maximum number of objects to return. Defaults to 1000; values above 1000 are capped at 1000. Non-positive or unparseable values use the default.",
             "in": "query",
             "name": "page_size",
             "schema": {
+              "default": 1000,
+              "maximum": 1000,
+              "minimum": 1,
               "type": "integer"
             }
           },
@@ -3973,54 +3986,78 @@
             "in": "query",
             "name": "offset",
             "schema": {
+              "default": 0,
+              "minimum": 0,
               "type": "integer"
             }
           },
           {
             "description": "The `id` of the object to be included in the response.",
+            "explode": true,
             "in": "query",
             "name": "_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "The `id` of the object to be excluded from the response.",
+            "explode": true,
             "in": "query",
             "name": "-_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
-            "description": "Indicated whether deleted objects should be included in the response.",
+            "description": "Set to `1` to include deleted objects. All other values exclude deleted objects; this is not a boolean query parameter.",
             "in": "query",
             "name": "deleted",
             "schema": {
-              "type": "boolean"
+              "default": "0",
+              "type": "string"
             }
           },
           {
             "deprecated": true,
             "description": "**SALES** Status of the sale to find.\nCan be used multiple times to search for objects with different values of this parameter.\nDeprecated, please use state and attributes instead.",
+            "explode": true,
             "in": "query",
             "name": "status",
             "schema": {
-              "type": "string"
-            }
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**SALES** State of the sale to find.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "state",
             "schema": {
-              "type": "string"
-            }
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**SALES** Attributes of the sale to find.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "attributes",
             "schema": {
@@ -4028,7 +4065,8 @@
                 "type": "string"
               },
               "type": "array"
-            }
+            },
+            "style": "form"
           },
           {
             "description": "**SALES** Invoice number of the sale.",
@@ -4107,30 +4145,45 @@
           },
           {
             "description": "**SALES** The ID of the register associated with the sale.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "register_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**SALES** The ID of a payment type used in the sale.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "payment_type_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**SALES** The ID of a product included in the sale.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "product_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**SALES** The exact total amount of the sale to find.",
@@ -4151,109 +4204,169 @@
           },
           {
             "description": "**PRODUCTS** The SKU of products to include in the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "sku",
             "schema": {
-              "type": "string"
-            }
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**PRODUCTS** The SKU of products to exclude from the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "-sku",
             "schema": {
-              "type": "string"
-            }
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**PRODUCTS** The ID of the supplier associated with the product to include in the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "supplier_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**PRODUCTS** The ID of the supplier associated with the product to exclude from the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "-supplier_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**PRODUCTS** The ID of the brand associated with the product to include in the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "brand_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**PRODUCTS** The ID of the brand associated with the product to exclude from the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "-brand_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**PRODUCTS** The ID of the tag associated with the product to include in the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "tag_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
-            "description": "**PRODUCTS** The ID of the brand associated with the product to exclude from the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "description": "**PRODUCTS** The ID of the tag associated with the product to exclude from the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "-tag_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**PRODUCTS** The ID of the product type associated with the product to include in the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "product_type_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**PRODUCTS** The ID of the product type associated with the product to exclude from the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "-product_type_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**PRODUCTS** The ID of the variant parent product associated with the product to include in the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "variant_parent_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**PRODUCTS** The ID of the variant parent product associated with the product to exclude from the search.\nCan be used multiple times to search for objects with different values of this parameter.",
+            "explode": true,
             "in": "query",
             "name": "-variant_parent_id",
             "schema": {
-              "format": "UUID",
-              "type": "string"
-            }
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "**CUSTOMERS** The `customer_code` associated with the customer to find.",
@@ -4321,7 +4434,13 @@
                 }
               }
             },
-            "description": ""
+            "description": "Search results with total_count, cursor information, and the min/max versions of returned entities. When include_related=false, data contains entity ID strings instead of objects."
+          },
+          "400": {
+            "description": "The resource type is missing or unsupported, a date/time or timezone filter is invalid, or the requested search window is too large."
+          },
+          "403": {
+            "description": "The user does not have permission to view the requested resource type."
           }
         },
         "summary": "Search for resources",
@@ -11238,17 +11357,82 @@
         "description": "Editable attributes of the sale for an update operation. The sale ID is provided in the URL.",
         "title": "Sale Update Request"
       },
+      "SearchPageInfo": {
+        "properties": {
+          "start_cursor": {
+            "nullable": true,
+            "type": "string"
+          },
+          "end_cursor": {
+            "nullable": true,
+            "type": "string"
+          },
+          "has_next_page": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "start_cursor",
+          "end_cursor",
+          "has_next_page"
+        ],
+        "type": "object"
+      },
       "SearchResponse": {
         "properties": {
           "data": {
-            "description": "A collection of objects of one of the supported types: sales, products or customers.",
+            "description": "Matching sales, products, or customers. When include_related=false, the array contains entity ID strings instead of objects.",
             "items": {
-              "type": "object"
+              "oneOf": [
+                {
+                  "type": "object"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "type": "array"
+          },
+          "total_count": {
+            "description": "Total number of search matches, not just the number in this page.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "page_info": {
+            "$ref": "#/components/schemas/SearchPageInfo"
+          },
+          "version": {
+            "$ref": "#/components/schemas/SearchVersionRange"
           }
         },
+        "required": [
+          "data",
+          "total_count",
+          "page_info",
+          "version"
+        ],
         "title": "Search Response",
+        "type": "object"
+      },
+      "SearchVersionRange": {
+        "description": "Version range of returned entities. Bounds are null when unavailable, including ID-only responses.",
+        "properties": {
+          "min": {
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "max": {
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "min",
+          "max"
+        ],
         "type": "object"
       },
       "ServiceItems": {

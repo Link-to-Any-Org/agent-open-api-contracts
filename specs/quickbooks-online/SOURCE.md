@@ -16,7 +16,7 @@
 | Upstream commit | `c4d5dfad23ffebf0302356876d0dc389708513a9` (2026-07-17) |
 | Upstream license | Apache-2.0 (Java SDK repo, checked on GitHub 2026-11-01) |
 | Spec file in repo | `openapi.json` (generated, 302 KB): 24 operations, 85 schemas. Source of truth for paths: `openapi.base.yaml` |
-| Last pulled | 2026-11-01 |
+| Last pulled | 2026-11-01 (re-checked 2026-11-02: XSDs unchanged, minorversion 75 still current) |
 
 ## How it is built
 
@@ -53,7 +53,9 @@ To add an entity: add its type to `ROOT_TYPES` in the script and its paths to `o
 
 ## Open questions / (verify)
 
-- `InventoryAdjustment` is in Intuit's XSD; confirm the endpoint is live for your company and minorversion.
+- `InventoryAdjustment`: confirmed in Intuit's docs (`POST /v3/company/{realmId}/inventoryadjustment`,
+  requires `DocNumber`, `AdjustAccountRef`, `Line`, `TxnDate`; Intuit docs fetched 2026-11-02 via Context7).
+  Not yet tried against the sandbox company.
 - `realmId` (company ID) comes back on the OAuth callback; the agent must store it per connection.
 - Intuit App Partner Program meters data reads; check which tier the workspace is on.
 - Production App URLs (launch, disconnect, connect/reconnect) needed from the team.

@@ -14,8 +14,8 @@
 | Docs | https://x-series-api.lightspeedhq.com/docs/introduction (auth: `/docs/authorization`, scopes: `/docs/scopes`) |
 | Upstream spec | No single file. Each reference page embeds a one-operation OpenAPI 3.0.1 definition. |
 | Upstream license | Apache-2.0 (stated in each embedded definition's `info.license`) |
-| Spec file in repo | `openapi.json`: 71 operations, 50 paths, 189 schemas (380 KB) |
-| Last pulled | 2026-11-01 |
+| Spec file in repo | `openapi.json`: 71 operations, 50 paths, 191 schemas (385 KB) |
+| Last pulled | 2026-11-02 (`/search` gained paging: `SearchPageInfo`, `SearchVersionRange`). 2027-01 is announced (fulfillment packages); not adopted yet |
 
 ## What was kept
 
