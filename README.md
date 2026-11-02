@@ -91,6 +91,15 @@ A spec only needs the endpoints for these, not the whole upstream API.
 - If it needs a URL, use the file's raw URL on GitHub (`Link-to-Any-Org/agent-open-api-contracts`).
   The repo is private, so raw URLs need auth; check the agent app can fetch them before relying on that.
 
+## Setup
+
+Needs Python 3 and Node. Run once per machine:
+
+```bash
+python3 -m pip install pyyaml   # used by the QuickBooks and Shopify build scripts
+npm install                     # installs graphql for npm run validate:shopify
+```
+
 ## Lint
 
 ```bash

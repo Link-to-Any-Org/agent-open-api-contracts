@@ -229,7 +229,7 @@ variation (send the full variation with its current `version`), then a `PHYSICAL
 ## 8. Tooling
 
 - **Python 3** for the build scripts (stdlib `json`, `xml.etree`, `re`, `subprocess`) plus **PyYAML**
-  (`pip install pyyaml`) for the QBO and Shopify builds.
+  (`python3 -m pip install pyyaml`) for the QBO and Shopify builds.
 - **Node** for lint (`npx @redocly/cli@2.63.0`, pinned in `scripts/lint.sh`) and Shopify validation
   (`graphql@16.9.0` in `package.json`; run `npm install` once).
 - Why two languages: Python suited the data reshaping and XSD parsing with no setup on macOS; Node is needed
