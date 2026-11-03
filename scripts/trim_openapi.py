@@ -40,8 +40,19 @@ def refs_in(node, found):
 def resolve(doc, ref):
     node = doc
     for part in ref[2:].split("/"):
+        if not isinstance(node, dict) or part not in node:
+            return None
         node = node[part]
     return node
+
+
+# Stands in for a schema the upstream document references but never defines (a dangling $ref).
+def placeholder(ref):
+    return {
+        "type": "object",
+        "description": f"Not defined in the upstream spec: it references {ref} but has no such schema. "
+                       "Placeholder added by trim_openapi.py; check the vendor's API reference for the real shape.",
+    }
 
 
 def main():
@@ -78,17 +89,23 @@ def main():
     pending = set()
     refs_in(paths, pending)
     seen = set()
+    dangling = set()
     while pending:
         ref = pending.pop()
         if ref in seen:
             continue
         seen.add(ref)
-        refs_in(resolve(doc, ref), pending)
+        target = resolve(doc, ref)
+        if target is None:
+            dangling.add(ref)
+        else:
+            refs_in(target, pending)
 
     components = {}
     for ref in sorted(seen):
         _, _, section, name = ref.split("/", 3)
-        components.setdefault(section, {})[name] = strip(resolve(doc, ref))
+        target = resolve(doc, ref)
+        components.setdefault(section, {})[name] = placeholder(ref) if target is None else strip(target)
 
     schemes = json.loads(json.dumps(doc.get("components", {}).get("securitySchemes", {})))
     for scheme in schemes.values():
@@ -126,6 +143,9 @@ def main():
     print(f"kept {len(paths)} paths, {ops} operations, {len(seen)} components", file=sys.stderr)
     if missing:
         print(f"WARNING: no operations for tags: {sorted(missing)}", file=sys.stderr)
+    if dangling:
+        print(f"WARNING: upstream references undefined schemas, placeholders added: {sorted(dangling)}",
+              file=sys.stderr)
 
 
 if __name__ == "__main__":

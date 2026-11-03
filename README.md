@@ -43,7 +43,7 @@ Callback URL for every OAuth app: `https://agent.linktoany.com/oauth/callback`
 | Platform | Folder | Auth | Dev app | Upstream spec | In repo | Callback URL |
 |---|---|---|---|---|---|---|
 | Shopify | `specs/shopify` | OAuth 2.0 | Done | None; GraphQL checked against live schema, REST built from docs | **Yes** (GraphQL 27 ops + REST 31 ops) | Yes |
-| Square | `specs/square` | OAuth 2.0 | Done | **Official** (Apache-2.0) | **Yes** (trimmed, 70 ops) | Yes |
+| Square | `specs/square` | OAuth 2.0 | Done | **Official** (Apache-2.0) | **Yes** (trimmed, 73 ops) | Yes |
 | Lightspeed X-Series | `specs/lightspeed-x-series` | OAuth 2.0 | Done | Per-endpoint only (Apache-2.0): merged | **Yes** (71 ops) | Yes |
 | Lightspeed R-Series | `specs/lightspeed-r-series` | OAuth 2.0 | Done | None official | No | Yes |
 | Lightspeed K-Series | `specs/lightspeed-k-series` | OAuth 2.0 (verify) | **Blocked**: partner application | Unknown | No | Yes, once approved |

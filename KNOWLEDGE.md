@@ -216,6 +216,7 @@ variation (send the full variation with its current `version`), then a `PHYSICAL
 | Shopify GraphQL op fails validation after a version bump | Field deprecated in the new version | Follow the validator's "Use X instead" message, rebuild |
 | `build_shopify_rest.py` hangs | Python `urllib` takes ~20 s per request to shopify.dev on macOS | Script fetches with `curl` instead (already fixed) |
 | Square spec lint error on `externalDocs` | Square nests it under `info` | `trim_openapi.py` moves it to the root (already fixed) |
+| `trim_openapi.py` `KeyError: 'AppFeeAllocation'` | Square's `api.json` references a schema it never defines (pulled in by the `Refunds` tag) | Script adds a placeholder `object` schema and prints a WARNING naming it (already fixed) |
 
 ## 7. Related systems
 

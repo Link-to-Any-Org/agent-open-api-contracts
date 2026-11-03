@@ -167,6 +167,9 @@
       "name": "Orders"
     },
     {
+      "name": "Refunds"
+    },
+    {
       "name": "TransferOrder"
     }
   ],
@@ -3147,6 +3150,283 @@
         }
       }
     },
+    "/v2/refunds": {
+      "get": {
+        "tags": [
+          "Refunds"
+        ],
+        "summary": "ListPaymentRefunds",
+        "operationId": "ListPaymentRefunds",
+        "description": "Retrieves a list of refunds for the account making the request.\n\nResults are eventually consistent, and new refunds or changes to refunds might take several\nseconds to appear.\n\nThe maximum results per page is 100.",
+        "x-release-status": "PUBLIC",
+        "security": [
+          {
+            "oauth2": [
+              "PAYMENTS_READ"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "begin_time",
+            "description": "Indicates the start of the time range to retrieve each `PaymentRefund` for, in RFC 3339 \nformat.  The range is determined using the `created_at` field for each `PaymentRefund`. \n\nDefault: The current time minus one year.",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "end_time",
+            "description": "Indicates the end of the time range to retrieve each `PaymentRefund` for, in RFC 3339 \nformat.  The range is determined using the `created_at` field for each `PaymentRefund`.\n\nDefault: The current time.",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "sort_order",
+            "description": "The order in which results are listed by `PaymentRefund.created_at`:\n- `ASC` - Oldest to newest.\n- `DESC` - Newest to oldest (default).",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "description": "A pagination cursor returned by a previous call to this endpoint.\nProvide this cursor to retrieve the next set of results for the original query.\n\nFor more information, see [Pagination](https://developer.squareup.com/docs/build-basics/common-api-patterns/pagination).",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "location_id",
+            "description": "Limit results to the location supplied. By default, results are returned\nfor all locations associated with the seller.",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "status",
+            "description": "If provided, only refunds with the given status are returned.\nFor a list of refund status values, see [PaymentRefund](entity:PaymentRefund).\n\nDefault: If omitted, refunds are returned regardless of their status.",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "source_type",
+            "description": "If provided, only returns refunds whose payments have the indicated source type.\nCurrent values include `CARD`, `BANK_ACCOUNT`, `WALLET`, `CASH`, and `EXTERNAL`.\nFor information about these payment source types, see\n[Take Payments](https://developer.squareup.com/docs/payments-api/take-payments).\n\nDefault: If omitted, refunds are returned regardless of the source type.",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "description": "The maximum number of results to be returned in a single page.\n\nIt is possible to receive fewer results than the specified limit on a given page.\n\nIf the supplied value is greater than 100, no more than 100 results are returned.\n\nDefault: 100",
+            "schema": {
+              "type": "integer"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "updated_at_begin_time",
+            "description": "Indicates the start of the time range to retrieve each `PaymentRefund` for, in RFC 3339\nformat.  The range is determined using the `updated_at` field for each `PaymentRefund`.\n\nDefault: If omitted, the time range starts at `begin_time`.",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "updated_at_end_time",
+            "description": "Indicates the end of the time range to retrieve each `PaymentRefund` for, in RFC 3339\nformat.  The range is determined using the `updated_at` field for each `PaymentRefund`.\n\nDefault: The current time.",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "sort_field",
+            "description": "The field used to sort results by. The default is `CREATED_AT`.",
+            "schema": {
+              "$ref": "#/components/schemas/ListPaymentRefundsRequestSortField"
+            },
+            "in": "query",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListPaymentRefundsResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Refunds"
+        ],
+        "summary": "RefundPayment",
+        "operationId": "RefundPayment",
+        "description": "Refunds a payment. You can refund the entire payment amount or a\nportion of it. You can use this endpoint to refund a card payment or record a \nrefund of a cash or external payment. For more information, see\n[Refund Payment](https://developer.squareup.com/docs/payments-api/refund-payments).",
+        "x-release-status": "PUBLIC",
+        "security": [
+          {
+            "oauth2": [
+              "PAYMENTS_WRITE"
+            ]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "An object containing the fields to POST for the request.\n\nSee the corresponding object definition for field details.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundPaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundPaymentResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-endpoint-errors": [
+          {
+            "error-code": "CARD_MISMATCH"
+          },
+          {
+            "error-code": "CARD_PRESENCE_REQUIRED"
+          },
+          {
+            "error-code": "CARD_TOKEN_EXPIRED"
+          },
+          {
+            "error-code": "CARD_TOKEN_USED"
+          },
+          {
+            "error-code": "GENERIC_DECLINE"
+          },
+          {
+            "error-code": "INSUFFICIENT_PERMISSIONS_FOR_REFUND"
+          },
+          {
+            "error-code": "INVALID_CARD"
+          },
+          {
+            "error-code": "INVALID_CARD_DATA"
+          },
+          {
+            "error-code": "INVALID_FEES"
+          },
+          {
+            "error-code": "PAYMENT_NOT_REFUNDABLE"
+          },
+          {
+            "error-code": "PAYMENT_NOT_REFUNDABLE_DUE_TO_DISPUTE"
+          },
+          {
+            "error-code": "REFUND_AMOUNT_INVALID"
+          },
+          {
+            "error-code": "REFUND_DECLINED"
+          },
+          {
+            "error-code": "REFUND_ERROR_PAYMENT_NEEDS_COMPLETION"
+          },
+          {
+            "error-code": "UNSUPPORTED_CARD_BRAND"
+          },
+          {
+            "error-code": "UNSUPPORTED_COUNTRY"
+          },
+          {
+            "error-code": "UNSUPPORTED_CURRENCY"
+          },
+          {
+            "error-code": "UNSUPPORTED_INSTRUMENT_TYPE"
+          },
+          {
+            "error-code": "UNSUPPORTED_SOURCE_TYPE"
+          },
+          {
+            "error-code": "VALUE_TOO_HIGH"
+          },
+          {
+            "error-code": "VERSION_MISMATCH"
+          }
+        ]
+      }
+    },
+    "/v2/refunds/{refund_id}": {
+      "get": {
+        "tags": [
+          "Refunds"
+        ],
+        "summary": "GetPaymentRefund",
+        "operationId": "GetPaymentRefund",
+        "description": "Retrieves a specific refund using the `refund_id`.",
+        "x-release-status": "PUBLIC",
+        "security": [
+          {
+            "oauth2": [
+              "PAYMENTS_READ"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "refund_id",
+            "description": "The unique ID for the desired `PaymentRefund`.",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPaymentRefundResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v2/transfer-orders": {
       "post": {
         "tags": [
@@ -3810,6 +4090,10 @@
             "nullable": true
           }
         }
+      },
+      "AppFeeAllocation": {
+        "type": "object",
+        "description": "Not defined in the upstream spec: it references #/components/schemas/AppFeeAllocation but has no such schema. Placeholder added by trim_openapi.py; check the vendor's API reference for the real shape."
       },
       "ArchivedState": {
         "type": "string",
@@ -13226,6 +13510,97 @@
         },
         "example": {}
       },
+      "DestinationDetails": {
+        "type": "object",
+        "description": "Details about a refund's destination.",
+        "x-release-status": "PUBLIC",
+        "properties": {
+          "card_details": {
+            "$ref": "#/components/schemas/DestinationDetailsCardRefundDetails",
+            "description": "Details about a card refund. Only populated if the destination_type is `CARD`.",
+            "nullable": true
+          },
+          "cash_details": {
+            "$ref": "#/components/schemas/DestinationDetailsCashRefundDetails",
+            "description": "Details about a cash refund. Only populated if the destination_type is `CASH`.",
+            "nullable": true
+          },
+          "external_details": {
+            "$ref": "#/components/schemas/DestinationDetailsExternalRefundDetails",
+            "description": "Details about an external refund. Only populated if the destination_type is `EXTERNAL`.",
+            "nullable": true
+          }
+        }
+      },
+      "DestinationDetailsCardRefundDetails": {
+        "type": "object",
+        "x-release-status": "PUBLIC",
+        "properties": {
+          "card": {
+            "$ref": "#/components/schemas/Card",
+            "description": "The card's non-confidential details.",
+            "nullable": true
+          },
+          "entry_method": {
+            "type": "string",
+            "description": "The method used to enter the card's details for the refund. The method can be\n`KEYED`, `SWIPED`, `EMV`, `ON_FILE`, or `CONTACTLESS`.",
+            "maxLength": 50,
+            "nullable": true
+          },
+          "auth_result_code": {
+            "type": "string",
+            "description": "The authorization code provided by the issuer when a refund is approved.",
+            "maxLength": 10,
+            "nullable": true
+          }
+        }
+      },
+      "DestinationDetailsCashRefundDetails": {
+        "type": "object",
+        "description": "Stores details about a cash refund. Contains only non-confidential information.",
+        "x-release-status": "PUBLIC",
+        "required": [
+          "seller_supplied_money"
+        ],
+        "properties": {
+          "seller_supplied_money": {
+            "$ref": "#/components/schemas/Money",
+            "description": "The amount and currency of the money supplied by the seller."
+          },
+          "change_back_money": {
+            "$ref": "#/components/schemas/Money",
+            "description": "The amount of change due back to the seller.\nThis read-only field is calculated\nfrom the `amount_money` and `seller_supplied_money` fields.",
+            "readOnly": true
+          }
+        }
+      },
+      "DestinationDetailsExternalRefundDetails": {
+        "type": "object",
+        "description": "Stores details about an external refund. Contains only non-confidential information.",
+        "x-release-status": "PUBLIC",
+        "required": [
+          "type",
+          "source"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The type of external refund the seller paid to the buyer. It can be one of the\nfollowing:\n- CHECK - Refunded using a physical check.\n- BANK_TRANSFER - Refunded using external bank transfer.\n- OTHER\\_GIFT\\_CARD - Refunded using a non-Square gift card.\n- CRYPTO - Refunded using a crypto currency.\n- SQUARE_CASH - Refunded using Square Cash App.\n- SOCIAL - Refunded using peer-to-peer payment applications.\n- EXTERNAL - A third-party application gathered this refund outside of Square.\n- EMONEY - Refunded using an E-money provider.\n- CARD - A credit or debit card that Square does not support.\n- STORED_BALANCE - Use for house accounts, store credit, and so forth.\n- FOOD_VOUCHER - Restaurant voucher provided by employers to employees to pay for meals\n- OTHER - A type not listed here.",
+            "maxLength": 50
+          },
+          "source": {
+            "type": "string",
+            "description": "A description of the external refund source. For example,\n\"Food Delivery Service\".",
+            "maxLength": 255
+          },
+          "source_id": {
+            "type": "string",
+            "description": "An ID to associate the refund to its originating source.",
+            "maxLength": 255,
+            "nullable": true
+          }
+        }
+      },
       "Error": {
         "type": "object",
         "description": "Represents an error encountered during a request to the Connect API.\n\nSee [Handling errors](https://developer.squareup.com/docs/build-basics/handling-errors) for more information.",
@@ -15015,6 +15390,50 @@
         ],
         "description": "The type of fulfillment.",
         "x-release-status": "PUBLIC"
+      },
+      "GetPaymentRefundResponse": {
+        "type": "object",
+        "description": "Defines the response returned by [GetRefund](api-endpoint:Refunds-GetPaymentRefund).\n\nNote: If there are errors processing the request, the refund field might not be\npresent or it might be present in a FAILED state.",
+        "x-release-status": "PUBLIC",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "description": "Information about errors encountered during the request."
+          },
+          "refund": {
+            "$ref": "#/components/schemas/PaymentRefund",
+            "description": "The requested `PaymentRefund`."
+          }
+        },
+        "example": {
+          "refund": {
+            "amount_money": {
+              "amount": 555,
+              "currency": "USD"
+            },
+            "created_at": "2021-10-13T19:59:05.073Z",
+            "id": "bP9mAsEMYPUGjjGNaNO5ZDVyLhSZY_69MmgHubkLqx9wGhnmenRUHOaKitE6llfZuxcWYjGxd",
+            "location_id": "L88917AVBK2S5",
+            "order_id": "9ltv0bx5PuvGXUYHYHxYSKEqC3IZY",
+            "payment_id": "bP9mAsEMYPUGjjGNaNO5ZDVyLhSZY",
+            "processing_fee": [
+              {
+                "amount_money": {
+                  "amount": -34,
+                  "currency": "USD"
+                },
+                "effective_at": "2021-10-13T21:34:35.000Z",
+                "type": "INITIAL"
+              }
+            ],
+            "reason": "Example Refund",
+            "status": "COMPLETED",
+            "updated_at": "2021-10-13T20:00:02.442Z"
+          }
+        }
       },
       "GiftCard": {
         "type": "object",
@@ -17016,6 +17435,78 @@
               "language_code": "en-US",
               "main_location_id": "9A65CGC72ZQG1",
               "status": "ACTIVE"
+            }
+          ]
+        }
+      },
+      "ListPaymentRefundsRequestSortField": {
+        "type": "string",
+        "enum": [
+          "CREATED_AT",
+          "UPDATED_AT"
+        ],
+        "x-enum-elements": [
+          {
+            "name": "CREATED_AT",
+            "description": ""
+          },
+          {
+            "name": "UPDATED_AT",
+            "description": ""
+          }
+        ],
+        "x-release-status": "PUBLIC"
+      },
+      "ListPaymentRefundsResponse": {
+        "type": "object",
+        "description": "Defines the response returned by [ListPaymentRefunds](api-endpoint:Refunds-ListPaymentRefunds).\n\nEither `errors` or `refunds` is present in a given response (never both).",
+        "x-release-status": "PUBLIC",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "description": "Information about errors encountered during the request."
+          },
+          "refunds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentRefund"
+            },
+            "description": "The list of requested refunds."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "The pagination cursor to be used in a subsequent request. If empty,\nthis is the final response.\n\nFor more information, see [Pagination](https://developer.squareup.com/docs/build-basics/common-api-patterns/pagination)."
+          }
+        },
+        "example": {
+          "cursor": "5evquW1YswHoT4EoyUhzMmTsCnsSXBU9U0WJ4FU4623nrMQcocH0RGU6Up1YkwfiMcF59ood58EBTEGgzMTGHQJpocic7ExOL0NtrTXCeWcv0UJIJNk8eXb",
+          "refunds": [
+            {
+              "amount_money": {
+                "amount": 555,
+                "currency": "USD"
+              },
+              "created_at": "2021-10-13T19:59:05.342Z",
+              "id": "bP9mAsEMYPUGjjGNaNO5ZDVyLhSZY_69MmgHubkLqx9wGhnmenRUHOaKitE6llfZuxcWYjGxd",
+              "location_id": "L88917AVBK2S5",
+              "order_id": "9ltv0bx5PuvGXUYHYHxYSKEqC3IZY",
+              "payment_id": "bP9mAsEMYPUGjjGNaNO5ZDVyLhSZY",
+              "processing_fee": [
+                {
+                  "amount_money": {
+                    "amount": -34,
+                    "currency": "USD"
+                  },
+                  "effective_at": "2021-10-13T21:34:35.000Z",
+                  "type": "INITIAL"
+                }
+              ],
+              "reason": "Example Refund",
+              "status": "COMPLETED",
+              "updated_at": "2021-10-13T20:00:03.497Z"
             }
           ]
         }
@@ -19712,6 +20203,140 @@
           }
         }
       },
+      "PaymentRefund": {
+        "type": "object",
+        "description": "Represents a refund of a payment made using Square. Contains information about\nthe original payment and the amount of money refunded.",
+        "x-release-status": "PUBLIC",
+        "required": [
+          "id",
+          "amount_money"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique ID for this refund, generated by Square.",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "status": {
+            "type": "string",
+            "description": "The refund's status:\n- `PENDING` - Awaiting approval.\n- `COMPLETED` - Successfully completed.\n- `REJECTED` - The refund was rejected.\n- `FAILED` - An error occurred.",
+            "maxLength": 50,
+            "nullable": true
+          },
+          "location_id": {
+            "type": "string",
+            "description": "The location ID associated with the payment this refund is attached to.",
+            "maxLength": 50,
+            "nullable": true
+          },
+          "unlinked": {
+            "type": "boolean",
+            "description": "Flag indicating whether or not the refund is linked to an existing payment in Square.",
+            "readOnly": true
+          },
+          "destination_type": {
+            "type": "string",
+            "description": "The destination type for this refund.\n\nCurrent values include `CARD`, `BANK_ACCOUNT`, `WALLET`, `BUY_NOW_PAY_LATER`, `CASH`,\n`EXTERNAL`, and `SQUARE_ACCOUNT`.",
+            "maxLength": 50,
+            "nullable": true
+          },
+          "destination_details": {
+            "$ref": "#/components/schemas/DestinationDetails",
+            "description": "Contains information about the refund destination. This field is populated only if\n`destination_id` is defined in the `RefundPayment` request.",
+            "readOnly": true
+          },
+          "amount_money": {
+            "$ref": "#/components/schemas/Money",
+            "description": "The amount of money refunded. This amount is specified in the smallest denomination\nof the applicable currency (for example, US dollar amounts are specified in cents)."
+          },
+          "app_fee_money": {
+            "$ref": "#/components/schemas/Money",
+            "description": "The amount of money the application developer contributed to help cover the refunded amount.\nThis amount is specified in the smallest denomination of the applicable currency (for example,\nUS dollar amounts are specified in cents). For more information, see\n[Working with Monetary Amounts](https://developer.squareup.com/docs/build-basics/working-with-monetary-amounts).",
+            "nullable": true
+          },
+          "app_fee_allocations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppFeeAllocation"
+            },
+            "description": "Details pertaining to contributors to the refund of the application fee.",
+            "readOnly": true
+          },
+          "processing_fee": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProcessingFee"
+            },
+            "description": "Processing fees and fee adjustments assessed by Square for this refund.",
+            "nullable": true
+          },
+          "payment_id": {
+            "type": "string",
+            "description": "The ID of the payment associated with this refund.",
+            "maxLength": 192,
+            "nullable": true
+          },
+          "order_id": {
+            "type": "string",
+            "description": "The ID of the order associated with the refund.",
+            "maxLength": 192,
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "description": "The reason for the refund.",
+            "maxLength": 192,
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "description": "The timestamp of when the refund was created, in RFC 3339 format.",
+            "maxLength": 32,
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "The timestamp of when the refund was last updated, in RFC 3339 format.",
+            "maxLength": 32,
+            "readOnly": true
+          },
+          "team_member_id": {
+            "type": "string",
+            "description": "An optional ID of the team member associated with taking the payment.",
+            "maxLength": 192,
+            "readOnly": true
+          },
+          "terminal_refund_id": {
+            "type": "string",
+            "description": "An optional ID for a Terminal refund.",
+            "readOnly": true,
+            "x-release-status": "BETA"
+          }
+        }
+      },
+      "ProcessingFee": {
+        "type": "object",
+        "description": "Represents the Square processing fee.",
+        "x-release-status": "PUBLIC",
+        "properties": {
+          "effective_at": {
+            "type": "string",
+            "description": "The timestamp of when the fee takes effect, in RFC 3339 format.",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of fee assessed or adjusted. The fee type can be `INITIAL` or `ADJUSTMENT`.",
+            "nullable": true
+          },
+          "amount_money": {
+            "$ref": "#/components/schemas/Money",
+            "description": "The fee amount, which might be negative, that is assessed or adjusted by Square.\n\nPositive values represent funds being assessed, while negative values represent\nfunds being returned.",
+            "nullable": true
+          }
+        }
+      },
       "Product": {
         "type": "string",
         "enum": [
@@ -19953,6 +20578,145 @@
             "description": "Additional recipients (other than the merchant) receiving a portion of this refund.\nFor example, fees assessed on a refund of a purchase by a third party integration.",
             "x-release-status": "DEPRECATED",
             "nullable": true
+          }
+        }
+      },
+      "RefundPaymentRequest": {
+        "type": "object",
+        "description": "Describes a request to refund a payment using [RefundPayment](api-endpoint:Refunds-RefundPayment).",
+        "x-release-status": "PUBLIC",
+        "required": [
+          "idempotency_key",
+          "amount_money"
+        ],
+        "properties": {
+          "idempotency_key": {
+            "type": "string",
+            "description": " A unique string that identifies this `RefundPayment` request. The key can be any valid string\nbut must be unique for every `RefundPayment` request.\n\nKeys are limited to a max of 45 characters - however, the number of allowed characters might be\nless than 45, if multi-byte characters are used.\n\nFor more information, see [Idempotency](https://developer.squareup.com/docs/working-with-apis/idempotency).",
+            "minLength": 1
+          },
+          "amount_money": {
+            "$ref": "#/components/schemas/Money",
+            "description": "The amount of money to refund.\n\nThis amount cannot be more than the `total_money` value of the payment minus the total\namount of all previously completed refunds for this payment.\n\nThis amount must be specified in the smallest denomination of the applicable currency\n(for example, US dollar amounts are specified in cents). For more information, see\n[Working with Monetary Amounts](https://developer.squareup.com/docs/build-basics/working-with-monetary-amounts).\n\nThe currency code must match the currency associated with the business\nthat is charging the card."
+          },
+          "app_fee_money": {
+            "$ref": "#/components/schemas/Money",
+            "description": "The amount of money the developer contributes to help cover the refunded amount.\nThis amount is specified in the smallest denomination of the applicable currency (for example,\nUS dollar amounts are specified in cents).\n\nThe value cannot be more than the `amount_money`.\n\nYou can specify this parameter in a refund request only if the same parameter was also included\nwhen taking the payment. This is part of the application fee scenario the API supports. For more\ninformation, see [Take Payments and Collect Fees](https://developer.squareup.com/docs/payments-api/take-payments-and-collect-fees).\n\nTo set this field, `PAYMENTS_WRITE_ADDITIONAL_RECIPIENTS` OAuth permission is required.\nFor more information, see [Permissions](https://developer.squareup.com/docs/payments-api/take-payments-and-collect-fees#permissions).",
+            "x-release-status": "BETA",
+            "nullable": true
+          },
+          "app_fee_allocations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppFeeAllocation"
+            },
+            "description": "Details pertaining to contributors to the refund of the application fee.\nThe sum of the amounts in the app_fee_allocations must equal the app_fee_money amount, if\npresent. If populated, an allocation must be present for every party that expects to contribute\na portion of the refunded application fee, including the application developer.",
+            "nullable": true
+          },
+          "payment_id": {
+            "type": "string",
+            "description": "The unique ID of the payment being refunded.\nRequired when unlinked=false, otherwise must not be set.",
+            "nullable": true
+          },
+          "destination_id": {
+            "type": "string",
+            "description": "The ID indicating where funds will be refunded to. Required for unlinked refunds. For more\ninformation, see [Process an Unlinked Refund](https://developer.squareup.com/docs/refunds-api/unlinked-refunds).\n\nFor refunds linked to Square payments, `destination_id` is usually omitted; in this case, funds\nwill be returned to the original payment source. The field may be specified in order to request\na cross-method refund to a gift card. For more information,\nsee [Cross-method refunds to gift cards](https://developer.squareup.com/docs/payments-api/refund-payments#cross-method-refunds-to-gift-cards).",
+            "nullable": true
+          },
+          "unlinked": {
+            "type": "boolean",
+            "description": "Indicates that the refund is not linked to a Square payment.\nIf set to true, `destination_id` and `location_id` must be supplied while `payment_id` must not\nbe provided.",
+            "nullable": true
+          },
+          "location_id": {
+            "type": "string",
+            "description": "The location ID associated with the unlinked refund.\nRequired for requests specifying `unlinked=true`.\nOtherwise, if included when `unlinked=false`, will throw an error.",
+            "maxLength": 50,
+            "nullable": true
+          },
+          "customer_id": {
+            "type": "string",
+            "description": "The [Customer](entity:Customer) ID of the customer associated with the refund.\nThis is required if the `destination_id` refers to a card on file created using the Cards\nAPI. Only allowed when `unlinked=true`.",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "description": "A description of the reason for the refund.",
+            "maxLength": 192,
+            "nullable": true
+          },
+          "payment_version_token": {
+            "type": "string",
+            "description": " Used for optimistic concurrency. This opaque token identifies the current `Payment`\nversion that the caller expects. If the server has a different version of the Payment,\nthe update fails and a response with a VERSION_MISMATCH error is returned.\nIf the versions match, or the field is not provided, the refund proceeds as normal.",
+            "x-release-status": "BETA",
+            "nullable": true
+          },
+          "team_member_id": {
+            "type": "string",
+            "description": "An optional [TeamMember](entity:TeamMember) ID to associate with this refund.",
+            "maxLength": 192,
+            "nullable": true
+          },
+          "cash_details": {
+            "$ref": "#/components/schemas/DestinationDetailsCashRefundDetails",
+            "description": "Additional details required when recording an unlinked cash refund (`destination_id` is CASH).",
+            "nullable": true
+          },
+          "external_details": {
+            "$ref": "#/components/schemas/DestinationDetailsExternalRefundDetails",
+            "description": "Additional details required when recording an unlinked external refund\n(`destination_id` is EXTERNAL).",
+            "nullable": true
+          }
+        },
+        "example": {
+          "amount_money": {
+            "amount": 1000,
+            "currency": "USD"
+          },
+          "app_fee_money": {
+            "amount": 10,
+            "currency": "USD"
+          },
+          "idempotency_key": "9b7f2dcf-49da-4411-b23e-a2d6af21333a",
+          "payment_id": "R2B3Z8WMVt3EAmzYWLZvz7Y69EbZY",
+          "reason": "Example"
+        }
+      },
+      "RefundPaymentResponse": {
+        "type": "object",
+        "description": "Defines the response returned by\n[RefundPayment](api-endpoint:Refunds-RefundPayment).\n\nIf there are errors processing the request, the `refund` field might not be\npresent, or it might be present with a status of `FAILED`.",
+        "x-release-status": "PUBLIC",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "description": "Information about errors encountered during the request."
+          },
+          "refund": {
+            "$ref": "#/components/schemas/PaymentRefund",
+            "description": "The successfully created `PaymentRefund`."
+          }
+        },
+        "example": {
+          "refund": {
+            "amount_money": {
+              "amount": 1000,
+              "currency": "USD"
+            },
+            "app_fee_money": {
+              "amount": 10,
+              "currency": "USD"
+            },
+            "created_at": "2021-10-13T21:23:19.116Z",
+            "id": "R2B3Z8WMVt3EAmzYWLZvz7Y69EbZY_KlWP8IC1557ddwc9QWTKrCVU6m0JXDz15R2Qym5eQfR",
+            "location_id": "L88917AVBK2S5",
+            "order_id": "1JLEUZeEooAIX8HMqm9kvWd69aQZY",
+            "payment_id": "R2B3Z8WMVt3EAmzYWLZvz7Y69EbZY",
+            "reason": "Example",
+            "status": "PENDING",
+            "updated_at": "2021-10-13T21:23:19.508Z"
           }
         }
       },
@@ -24142,6 +24906,7 @@
               "MERCHANT_PROFILE_WRITE": "__HTTP Method__: `POST`, `PUT`\n\nGrants write access to business and location information. For example, to create a new location or\nupdate the business hours at an existing location.",
               "ORDERS_READ": "__HTTP Method__: `GET`\n\nGrants read access to order information. For example, to call the\nBatchRetrieveOrders endpoint.",
               "ORDERS_WRITE": "__HTTP Method__: `POST`, `PUT`, `DELETE`\n\nGrants write access to order information. For example, to call the\nCreateCheckout endpoint.",
+              "PAYMENTS_READ": "__HTTP Method__: `GET`\n\nGrants read access to transaction and refund information. For example, to call\nthe RetrieveTransaction endpoint.",
               "PAYMENTS_WRITE": "__HTTP Method__: `POST`, `PUT`, `DELETE`\n\nGrants write access to transaction and refunds information. For example, to\nprocess payments with the Payments or Checkout API."
             }
           }
