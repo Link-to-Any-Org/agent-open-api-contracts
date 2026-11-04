@@ -168,8 +168,16 @@ everywhere: **a generated file is never edited by hand** — change the source, 
 - **App:** sandbox.dev.clover.com, Private app, North America, Web clients. Production needs App Market review.
 - **Redirect:** Site URL `https://agent.linktoany.com` + **Alternate Launch Path** `/oauth/callback`
   (the field rejects full URLs).
-- **Permissions:** Customers R/W, Inventory R/W, Merchant R/W, Orders R/W, Payments R, Employees R.
-  No gift-card or consignment permissions exist. One merchant = one location.
+- **Permissions** (App Settings → Requested Permissions): Customers R/W, Inventory R/W, Merchant R/W,
+  Orders R/W, Payments R, Employees R. Orders **Write** was found unticked on 2026-11-04 and re-ticked; the
+  sandbox app currently also has Employees W and Payments W ticked, which the migration does not need:
+  untick them before App Market review. Leave **Ecommerce → Enable online payments** off: it is for
+  taking card payments online, not for importing orders.
+- Clover has no fine-grained scopes (no `atomic_orders` scope): atomic orders (`/atomic_order/checkouts`)
+  use Orders Read/Write plus Inventory Read (items, tax rates).
+- **Changed permissions only apply after the merchant uninstalls and reinstalls the app** (test merchants
+  too), then the agent reconnects for a new token. Refreshing the old token keeps the old permissions.
+- No gift-card or consignment permissions exist. One merchant = one location.
 - **Stock tracking** depends on the merchant's Clover plan (Inventory → Setup → Track stock).
 - Test merchant needs data before testing. No official spec (Postman collection only).
 
@@ -211,6 +219,7 @@ variation (send the full variation with its current `version`), then a `PHYSICAL
 | Symptom | Cause | Fix |
 |---|---|---|
 | QBO callback: `CONNECT_FAILED … invalid_client` | Token request rejected the client credentials. Intuit's OAuth Playground worked with the Development keys, so the agent held different credentials (likely Production keys or a mistyped secret) | Re-save the **Development** client ID + secret in the agent's Developer app; use the sandbox API base; start a fresh sign-in (codes are single-use, ~5 min). If it persists, check the agent sends credentials as HTTP Basic |
+| Clover: `POST /atomic_order/checkouts` → 401 even with a fresh token | Clover returns 401 for a missing permission too. Orders **Write** was unticked in Requested Permissions | Tick Orders Write, Save, uninstall + reinstall the app on the merchant, reconnect the System in the agent, re-run |
 | Shopify 403 on REST with customer data | Protected customer data access not requested | Request step 1 on the app's API access page |
 | Agent app: OAuth app dropdown shows "None for …" | No Developer app saved with that exact token URL | Owner saves the Developer app in Settings, token URL must match |
 | Shopify GraphQL op fails validation after a version bump | Field deprecated in the new version | Follow the validator's "Use X instead" message, rebuild |
