@@ -162,7 +162,16 @@ everywhere: **a generated file is never edited by hand** — change the source, 
 - Lightspeed's developer site is behind a bot check, so docs cannot be fetched by scripts.
 - In the agent app: an Owner must save the R-Series Developer app first, or the OAuth app dropdown shows
   "None for https://cloud.lightspeedapp.com".
-- No spec yet: to be written from the docs.
+- **Spec:** `specs/lightspeed-r-series/openapi.yaml`, hand-written from the Context7 docs (library
+  `/websites/developers_lightspeedhq_retail`, API V3); Lightspeed publishes no OpenAPI file. Facts not shown
+  by Context7 are left out and listed in `SOURCE.md` under (verify).
+- **Everything is a string.** R-Series JSON sends every scalar as a string (IDs, numbers, "true"/"false").
+  The spec types every scalar in request and response schemas as `type: string` and the description says what it
+  means; timestamps are `string` + `format: date-time`. Request bodies typed this way were not tried against a live store.
+- **V3 paging:** cursor based. Every list returns `@attributes.next`/`previous` (full URLs, empty string at the end);
+  follow them, never build `after`/`before`. Limit max 100. `count` is only returned with `count=1`. `offset` and `orderby` are gone (use `sort`).
+- **Account ID:** `GET https://api.lightspeedapp.com/API/V3/Account.json` first; the spec models it as the `accountID` server variable.
+- Docs list finer scopes per endpoint (e.g. `employee:inventory`, `employee:register`); `employee:all` is the one we request.
 
 ### Clover
 - **App:** sandbox.dev.clover.com, Private app, North America, Web clients. Production needs App Market review.
@@ -250,7 +259,8 @@ variation (send the full variation with its current `version`), then a `PHYSICAL
 ## 9. Open items
 
 - Try each spec against its sandbox/test store (none tested end-to-end yet).
-- Write specs for Clover and Lightspeed R-Series (both from docs).
+- Write the Clover spec (from docs).
+- R-Series spec is untested against a live store: string-typed request bodies, one-record list shape, and the (verify) items in its SOURCE.md.
 - Square webhook URL from the team; Square production redirect URL.
 - Shopify: `read_all_orders` approval; teammate's gift-card create error (exact text needed).
 - QBO: production App URLs from the team; confirm the agent's credential method after the `invalid_client` fix.

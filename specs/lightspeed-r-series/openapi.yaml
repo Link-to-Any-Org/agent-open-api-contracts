@@ -1,0 +1,3642 @@
+openapi: 3.0.3
+info:
+  title: Lightspeed Retail R-Series API (agent contract)
+  version: V3
+  description: |-
+    Subset of the Lightspeed Retail (R-Series) API V3 used by the LINK! agent. Written from the current docs (developers.lightspeedhq.com/retail); Lightspeed publishes no OpenAPI file. Source and open questions: see SOURCE.md in this folder.
+
+    **Account ID.** Every path lives under `/Account/{accountID}`. Call `GET /Account.json` once after OAuth to learn the ID, then set the `accountID` server variable.
+
+    **Everything is a string.** R-Series JSON sends every scalar as a string: IDs ("12"), numbers ("4.99"), booleans ("true"/"false"). Schemas therefore type every scalar as `string` and the description says what it means. Timestamps are ISO 8601 strings. ID 0 means "none". Update calls (PUT) keep fields you leave out; a null or empty value clears the field.
+
+    **Lists and paging (V3).** List calls return `{"@attributes": {"next", "previous"}, "<Resource>": [...]}`. Follow the full `next` URL until it is an empty string; do not build `after`/`before` yourself. Default and max page size is 100. A page with one record may come back as an object, not an array. Single records come back as `{"@attributes": {"count": "1"}, "<Resource>": {...}}`.
+
+    **Related records.** Use `load_relations=["ItemShops","Prices"]` to load relations; each one raises the request cost.
+
+    **Filtering.** Filters are query parameters named after the field, e.g. `?description=~,shirt%` or `?timeStamp=>=,2026-01-01T00:00:00+00:00`. Format: `field=operator,value`; the operator and comma must be URL-encoded. Operators: `=` (default), `>` , `>=`, `<`, `<=`, `><` (between: `itemID=><,1,10`), `!=`, `~` (like, % is the wildcard), `!~` (not like), `IN` (up to 100 values: `itemID=IN,[1,2,3]`), and `or` (`or=description%3Dfoo|description%3Dbar`, with `=` percent-encoded as %3D). Percent-encode values. `or` and `load_relations` raise the request cost. Not every field is filterable on every endpoint.
+
+    **Rate limit.** Leaky bucket (bucket size 90 in the docs example) plus a per-second burst limit. Each request has a cost in drips (see `X-LS-Api-Request-Cost`). On 429, wait `Retry-After` seconds.
+servers:
+- url: https://api.lightspeedapp.com/API/V3/Account/{accountID}
+  description: Lightspeed Retail R-Series API V3, scoped to one account
+  variables:
+    accountID:
+      default: '0'
+      description: Account ID of the merchant, from GET /Account.json after OAuth. 0 is only a placeholder.
+security:
+- oauth2:
+  - employee:all
+tags:
+- name: Account
+  description: Find the account ID of the connected merchant
+- name: Inventory
+  description: Items, stock per shop, matrices, attribute sets, manufacturers, categories, vendors and tax setup
+- name: Orders
+  description: Sales (with lines and payments), payment types, registers, employees and vendor purchase orders
+- name: Customers
+  description: Customers and their contact details
+- name: Gift cards
+  description: Gift cards and store-credit accounts (CreditAccount)
+- name: Locations
+  description: Shops (stores and warehouses)
+- name: Consignments
+  description: Inventory transfers between shops
+- name: Images
+  description: Item and item matrix images
+paths:
+  /Account.json:
+    get:
+      operationId: getAccount
+      summary: Find the account ID
+      tags:
+      - Account
+      description: Returns the account the access token belongs to. Call this once after OAuth to learn {accountID};
+        every other path needs it in the server URL. This is the only call that uses the base URL without /Account/{accountID}.
+      servers:
+      - url: https://api.lightspeedapp.com/API/V3
+        description: API root, no account ID
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Item.json:
+    get:
+      operationId: listItems
+      summary: List item records
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: createItem
+      summary: Create item
+      tags:
+      - Inventory
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Item/{itemID}.json:
+    get:
+      operationId: getItem
+      summary: Get one item
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/itemID'
+      - $ref: '#/components/parameters/load_relations'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    put:
+      operationId: updateItem
+      summary: Update item
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/itemID'
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      description: To change stock, send ItemShops.ItemShop with itemShopID (or shopID) and qoh. Other fields keep
+        their value when left out.
+  /ItemShop.json:
+    get:
+      operationId: listItemShops
+      summary: List item stock per shop
+      tags:
+      - Inventory
+      description: 'Stock rows: one per item per shop, plus a shopID 0 summary row. Writing stock is documented
+        only through updateItem.'
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemShopList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /ItemMatrix.json:
+    get:
+      operationId: listItemMatrices
+      summary: List item matrix records
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemMatrixList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: createItemMatrix
+      summary: Create item matrix
+      tags:
+      - Inventory
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemMatrixWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemMatrixResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /ItemMatrix/{itemMatrixID}.json:
+    get:
+      operationId: getItemMatrix
+      summary: Get one item matrix
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/itemMatrixID'
+      - $ref: '#/components/parameters/load_relations'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemMatrixResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    put:
+      operationId: updateItemMatrix
+      summary: Update item matrix
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/itemMatrixID'
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemMatrixWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemMatrixResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /ItemAttributeSet.json:
+    get:
+      operationId: listItemAttributeSets
+      summary: List item attribute set records
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemAttributeSetList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: createItemAttributeSet
+      summary: Create item attribute set
+      tags:
+      - Inventory
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemAttributeSetWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemAttributeSetResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /ItemAttributeSet/{itemAttributeSetID}.json:
+    get:
+      operationId: getItemAttributeSet
+      summary: Get one item attribute set
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/itemAttributeSetID'
+      - $ref: '#/components/parameters/load_relations'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemAttributeSetResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Manufacturer.json:
+    get:
+      operationId: listManufacturers
+      summary: List manufacturer records
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManufacturerList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: createManufacturer
+      summary: Create manufacturer
+      tags:
+      - Inventory
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManufacturerWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManufacturerResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Manufacturer/{manufacturerID}.json:
+    get:
+      operationId: getManufacturer
+      summary: Get one manufacturer
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/manufacturerID'
+      - $ref: '#/components/parameters/load_relations'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManufacturerResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Category.json:
+    get:
+      operationId: listCategories
+      summary: List category records
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: createCategory
+      summary: Create category
+      tags:
+      - Inventory
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      description: Category writes cost 10 drips.
+  /Vendor.json:
+    get:
+      operationId: listVendors
+      summary: List vendor records
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: createVendor
+      summary: Create vendor
+      tags:
+      - Inventory
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /TaxClass.json:
+    get:
+      operationId: listTaxClasses
+      summary: List tax classes
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxClassList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /TaxCategory.json:
+    get:
+      operationId: listTaxCategories
+      summary: List tax categories
+      tags:
+      - Inventory
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxCategoryList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Customer.json:
+    get:
+      operationId: listCustomers
+      summary: List customer records
+      tags:
+      - Customers
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: createCustomer
+      summary: Create customer
+      tags:
+      - Customers
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Customer/{customerID}.json:
+    get:
+      operationId: getCustomer
+      summary: Get one customer
+      tags:
+      - Customers
+      parameters:
+      - $ref: '#/components/parameters/customerID'
+      - $ref: '#/components/parameters/load_relations'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    put:
+      operationId: updateCustomer
+      summary: Update customer
+      tags:
+      - Customers
+      parameters:
+      - $ref: '#/components/parameters/customerID'
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Sale.json:
+    get:
+      operationId: listSales
+      summary: List sale records
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: createSale
+      summary: Create sale
+      tags:
+      - Orders
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+      - $ref: '#/components/parameters/load_relations'
+      description: Creates a sale with its SaleLines and SalePayments in one request. If completed is "true", the
+        payments must equal the sale total or the request fails.
+  /Sale/{saleID}.json:
+    get:
+      operationId: getSale
+      summary: Get one sale
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/saleID'
+      - $ref: '#/components/parameters/load_relations'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    put:
+      operationId: updateSale
+      summary: Update sale
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/saleID'
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /PaymentType.json:
+    get:
+      operationId: listPaymentTypes
+      summary: List payment types
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTypeList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Register.json:
+    get:
+      operationId: listRegisters
+      summary: List registers
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Employee.json:
+    get:
+      operationId: listEmployees
+      summary: List employees
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Order.json:
+    get:
+      operationId: listOrders
+      summary: List purchase order records
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: createOrder
+      summary: Create purchase order
+      tags:
+      - Orders
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Order/{orderID}.json:
+    get:
+      operationId: getOrder
+      summary: Get one purchase order
+      tags:
+      - Orders
+      parameters:
+      - $ref: '#/components/parameters/orderID'
+      - $ref: '#/components/parameters/load_relations'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /OrderLine.json:
+    post:
+      operationId: createOrderLine
+      summary: Add a line to a purchase order
+      tags:
+      - Orders
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderLineWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderLineResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /CreditAccount.json:
+    get:
+      operationId: listCreditAccounts
+      summary: List gift card or credit account records
+      tags:
+      - Gift cards
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      - $ref: '#/components/parameters/giftCard'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAccountList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      description: Gift cards are left out unless giftCard=true is sent. Only the = operator works for lookups on
+        this endpoint.
+    post:
+      operationId: createCreditAccount
+      summary: Create gift card or credit account
+      tags:
+      - Gift cards
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditAccountCreate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAccountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /CreditAccount/{creditAccountID}.json:
+    get:
+      operationId: getCreditAccount
+      summary: Get one gift card or credit account
+      tags:
+      - Gift cards
+      parameters:
+      - $ref: '#/components/parameters/creditAccountID'
+      - $ref: '#/components/parameters/load_relations'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAccountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    put:
+      operationId: updateCreditAccount
+      summary: Update gift card or credit account
+      tags:
+      - Gift cards
+      parameters:
+      - $ref: '#/components/parameters/creditAccountID'
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditAccountUpdate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAccountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Shop.json:
+    get:
+      operationId: listShops
+      summary: List shop (location) records
+      tags:
+      - Locations
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Shop/{shopID}.json:
+    get:
+      operationId: getShop
+      summary: Get one shop (location)
+      tags:
+      - Locations
+      parameters:
+      - $ref: '#/components/parameters/shopID'
+      - $ref: '#/components/parameters/load_relations'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Inventory/Transfer.json:
+    get:
+      operationId: listTransfers
+      summary: List inventory transfer records
+      tags:
+      - Consignments
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: createTransfer
+      summary: Create inventory transfer
+      tags:
+      - Consignments
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferWrite'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Inventory/Transfer/{transferID}.json:
+    get:
+      operationId: getTransfer
+      summary: Get one inventory transfer
+      tags:
+      - Consignments
+      parameters:
+      - $ref: '#/components/parameters/transferID'
+      - $ref: '#/components/parameters/load_relations'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Inventory/Transfer/{transferID}/TransferItems.json:
+    get:
+      operationId: listTransferItems
+      summary: List the items on a transfer
+      tags:
+      - Consignments
+      parameters:
+      - $ref: '#/components/parameters/transferID'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/after'
+      - $ref: '#/components/parameters/before'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/load_relations'
+      - $ref: '#/components/parameters/count'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferItemList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Inventory/Transfer/{transferID}/AddItems.json:
+    post:
+      operationId: addTransferItems
+      summary: Add items to a transfer
+      tags:
+      - Consignments
+      description: Does not change inventory. Inventory moves when items are received on a checked-in transfer (receive/check-in
+        actions are not in this spec).
+      parameters:
+      - $ref: '#/components/parameters/transferID'
+      requestBody:
+        required: true
+        description: Request body. Every scalar is sent as a string.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferItemsAdd'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferItemsAddResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /Image.json:
+    post:
+      operationId: createImage
+      summary: Upload an item or item matrix image
+      tags:
+      - Images
+      description: Multipart upload. The first part "data" holds JSON with itemID or itemMatrixID; the second part
+        "image" holds the file.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImageUpload'
+            encoding:
+              data:
+                contentType: application/json
+              image:
+                contentType: image/jpeg, image/png
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: OAuth 2.0 authorization code. R-Series scopes mirror employee permissions; employee:all covers
+        everything this spec uses.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cloud.lightspeedapp.com/auth/oauth/authorize
+          tokenUrl: https://cloud.lightspeedapp.com/auth/oauth/token
+          scopes:
+            employee:all: Full access as the authorizing employee
+  parameters:
+    limit:
+      name: limit
+      in: query
+      description: Max records per page. 0 to 100, default 100.
+      schema:
+        type: string
+        default: '100'
+    sort:
+      name: sort
+      in: query
+      description: Field to sort by; prefix with - for descending. Only some fields are sortable per endpoint (usually
+        the ID and timeStamp).
+      schema:
+        type: string
+    after:
+      name: after
+      in: query
+      description: Cursor for the next page. Do not build it; follow the next URL in @attributes instead.
+      schema:
+        type: string
+    before:
+      name: before
+      in: query
+      description: Cursor for the previous page. Do not build it; follow the previous URL in @attributes instead.
+      schema:
+        type: string
+    archived:
+      name: archived
+      in: query
+      description: '"true" returns archived and active records, "false" (default) only active, "only" only archived.'
+      schema:
+        type: string
+        enum:
+        - 'true'
+        - 'false'
+        - only
+        default: 'false'
+    load_relations:
+      name: load_relations
+      in: query
+      description: JSON array of relations to load, e.g. ["ItemShops","Prices"]. Each relation raises the request
+        cost; "all" is for discovery only.
+      schema:
+        type: string
+    count:
+      name: count
+      in: query
+      description: Send 1 to get only the number of matching records in @attributes.count. Cannot be combined with
+        after, before, limit or sort. Costs 10 drips.
+      schema:
+        type: string
+        enum:
+        - '1'
+    giftCard:
+      name: giftCard
+      in: query
+      description: Send true to include gift cards in the results (they are left out otherwise).
+      schema:
+        type: string
+        enum:
+        - 'true'
+        - 'false'
+    itemID:
+      name: itemID
+      in: path
+      required: true
+      description: Item ID. Integer ID, sent as a string.
+      schema:
+        type: string
+    itemMatrixID:
+      name: itemMatrixID
+      in: path
+      required: true
+      description: Item matrix ID. Integer ID, sent as a string.
+      schema:
+        type: string
+    itemAttributeSetID:
+      name: itemAttributeSetID
+      in: path
+      required: true
+      description: Item attribute set ID. Integer ID, sent as a string.
+      schema:
+        type: string
+    manufacturerID:
+      name: manufacturerID
+      in: path
+      required: true
+      description: Manufacturer ID. Integer ID, sent as a string.
+      schema:
+        type: string
+    customerID:
+      name: customerID
+      in: path
+      required: true
+      description: Customer ID. Integer ID, sent as a string.
+      schema:
+        type: string
+    saleID:
+      name: saleID
+      in: path
+      required: true
+      description: Sale ID. Integer ID, sent as a string.
+      schema:
+        type: string
+    orderID:
+      name: orderID
+      in: path
+      required: true
+      description: Purchase order ID. Integer ID, sent as a string.
+      schema:
+        type: string
+    creditAccountID:
+      name: creditAccountID
+      in: path
+      required: true
+      description: Credit account ID. Integer ID, sent as a string.
+      schema:
+        type: string
+    shopID:
+      name: shopID
+      in: path
+      required: true
+      description: Shop ID. Integer ID, sent as a string.
+      schema:
+        type: string
+    transferID:
+      name: transferID
+      in: path
+      required: true
+      description: Transfer ID. Integer ID, sent as a string.
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Missing, expired or invalid access token
+    RateLimited:
+      description: Rate limit hit. Wait Retry-After seconds, then retry.
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying
+          schema:
+            type: string
+        X-LS-API-RateLimit-Type:
+          description: 'Which limiter blocked the request: api-leaky-bucket or api-burst-limiter'
+          schema:
+            type: string
+  schemas:
+    ListAttributes:
+      type: object
+      description: The @attributes block of every list response (V3 cursor paging).
+      properties:
+        next:
+          type: string
+          description: Full URL of the next page of results; empty string on the last page. Call it as given, do
+            not rebuild it
+        previous:
+          type: string
+          description: Full URL of the previous page; empty string on the first page
+        count:
+          type: string
+          description: Total number of matching records. Only present when the request used count=1 (V3 does not
+            return it by default). Integer, sent as a string.
+    CountAttributes:
+      type: object
+      description: The @attributes block of a single-record response.
+      properties:
+        count:
+          type: string
+          description: Number of records returned (1 for a single-record response). Integer, sent as a string.
+    ItemPrice:
+      type: object
+      properties:
+        amount:
+          type: string
+          description: Price amount. Decimal number, sent as a string.
+        useTypeID:
+          type: string
+          description: Price level ID (1 = Default, 2 = MSRP, 3 = Online in the docs examples; stores can add levels).
+            Integer ID, sent as a string.
+        useType:
+          type: string
+          description: Price level name, e.g. Default, MSRP, Online
+    ItemPrices:
+      type: object
+      properties:
+        ItemPrice:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemPrice'
+    ItemShop:
+      type: object
+      description: Inventory record of one item in one shop. Fields shown depend on the endpoint and scopes.
+      properties:
+        itemShopID:
+          type: string
+          description: ItemShop ID. Integer ID, sent as a string.
+        qoh:
+          type: string
+          description: Quantity on hand. Negative means negative inventory. Integer, sent as a string.
+        sellable:
+          type: string
+          description: Amount available for sale (matches qoh unless qoh is negative, then 0). Integer, sent as
+            a string.
+        backorder:
+          type: string
+          description: Amount on backorder (on a purchase order). Integer, sent as a string.
+        componentQoh:
+          type: string
+          description: Amount that could be built or broken down from boxes in stock. Integer, sent as a string.
+        componentBackorder:
+          type: string
+          description: Amount that could be built or broken down from boxes on order. Integer, sent as a string.
+        onLayaway:
+          type: string
+          description: Units reserved for layaways. Integer, sent as a string.
+        onSpecialOrder:
+          type: string
+          description: Units reserved for special orders. Integer, sent as a string.
+        onWorkorder:
+          type: string
+          description: Units reserved for work orders. Integer, sent as a string.
+        onTransferOut:
+          type: string
+          description: Units in transit out of this shop. Integer, sent as a string.
+        onTransferIn:
+          type: string
+          description: Units in transit into this shop. Integer, sent as a string.
+        averageCost:
+          type: string
+          description: Weighted average cost; only filled on the shopID 0 (account-wide) record. Decimal number,
+            sent as a string.
+        nextFifoLotID:
+          type: string
+          description: ID of the next FIFO lot. Integer ID, sent as a string.
+        nextFifoLotCost:
+          type: string
+          description: Cost of the next FIFO lot. Decimal number, sent as a string.
+        lastReceivedLotID:
+          type: string
+          description: ID of the last received lot. Integer ID, sent as a string.
+        lastReceivedCost:
+          type: string
+          description: Cost of the last received lot. Decimal number, sent as a string.
+        totalValueFifo:
+          type: string
+          description: Inventory value by FIFO. Decimal number, sent as a string.
+        totalValueAvgCost:
+          type: string
+          description: Inventory value by average cost. Decimal number, sent as a string.
+        totalValueNegativeInventory:
+          type: string
+          description: Value of negative inventory. Decimal number, sent as a string.
+        reorderPoint:
+          type: string
+          description: Reorder when quantity on hand is at or below this. Integer, sent as a string.
+        reorderLevel:
+          type: string
+          description: Desired quantity to reach when reordering. Integer, sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        itemID:
+          type: string
+          description: Item ID. Integer ID, sent as a string.
+        shopID:
+          type: string
+          description: Shop ID. The ItemShop with shopID 0 is a summary record for all shops. Integer ID, sent as
+            a string.
+    ItemShops:
+      type: object
+      properties:
+        ItemShop:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemShop'
+    ItemShopWrite:
+      type: object
+      properties:
+        itemShopID:
+          type: string
+          description: ItemShop to update. Give this or shopID. Integer ID, sent as a string.
+        shopID:
+          type: string
+          description: Shop whose record to update. Give this or itemShopID. Integer ID, sent as a string.
+        qoh:
+          type: string
+          description: Quantity on hand to set. Integer, sent as a string.
+    ItemShopsWrite:
+      type: object
+      description: 'Update only: set qoh of one shop. Identify the record with itemShopID or shopID.'
+      properties:
+        ItemShop:
+          $ref: '#/components/schemas/ItemShopWrite'
+    ItemAttributes:
+      type: object
+      description: Attribute values of an item that belongs to a matrix. Shown in responses; writing it is not documented
+        (see SOURCE.md).
+      properties:
+        attribute1:
+          type: string
+          description: Value of the first attribute, e.g. White
+        attribute2:
+          type: string
+          description: Value of the second attribute, e.g. Small
+        attribute3:
+          type: string
+          description: Value of the third attribute
+        itemAttributeSetID:
+          type: string
+          description: ItemAttributeSet this item follows. Integer ID, sent as a string.
+    Item:
+      type: object
+      description: Sellable item (one SKU).
+      properties:
+        itemID:
+          type: string
+          description: Item ID. Integer ID, sent as a string.
+        systemSku:
+          type: string
+          description: System-generated SKU
+        avgCost:
+          type: string
+          description: Average cost. Decimal number, sent as a string.
+        archived:
+          type: string
+          description: Whether the item is archived. "true" or "false", sent as a string.
+        createTime:
+          type: string
+          description: Created. Date/time, ISO 8601.
+          format: date-time
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        defaultCost:
+          type: string
+          description: Default cost of the item. Decimal number, sent as a string.
+        discountable:
+          type: string
+          description: Whether discounts apply. "true" or "false", sent as a string.
+        tax:
+          type: string
+          description: Whether tax applies. "true" or "false", sent as a string.
+        itemType:
+          type: string
+          description: 'Item type, e.g. default. The ItemMatrix docs list: default, non_inventory, serialized, box,
+            serialized_assembly, assembly'
+        serialized:
+          type: string
+          description: Whether the item is serialized. "true" or "false", sent as a string.
+        description:
+          type: string
+          description: Item description
+        modelYear:
+          type: string
+          description: Model year (0 when unset). Integer, sent as a string.
+        upc:
+          type: string
+          description: UPC code
+        ean:
+          type: string
+          description: EAN code
+        customSku:
+          type: string
+          description: Custom SKU
+        manufacturerSku:
+          type: string
+          description: Manufacturer SKU
+        publishToEcom:
+          type: string
+          description: Whether the item is published to e-commerce. "true" or "false", sent as a string.
+        categoryID:
+          type: string
+          description: Category ID (0 = none). Integer ID, sent as a string.
+        taxClassID:
+          type: string
+          description: Tax class ID. Integer ID, sent as a string.
+        departmentID:
+          type: string
+          description: Department ID (0 = none). Integer ID, sent as a string.
+        itemMatrixID:
+          type: string
+          description: Item matrix this item belongs to (0 = none). Integer ID, sent as a string.
+        manufacturerID:
+          type: string
+          description: Manufacturer ID (0 = none). Integer ID, sent as a string.
+        seasonID:
+          type: string
+          description: Season ID (0 = none). Integer ID, sent as a string.
+        defaultVendorID:
+          type: string
+          description: Default vendor ID (0 = none). Integer ID, sent as a string.
+        ItemAttributes:
+          $ref: '#/components/schemas/ItemAttributes'
+        ItemShops:
+          $ref: '#/components/schemas/ItemShops'
+        Prices:
+          $ref: '#/components/schemas/ItemPrices'
+    ItemWrite:
+      type: object
+      description: Body for creating or updating an item. Fields left out keep their value on update; a null or
+        empty value clears it.
+      properties:
+        defaultCost:
+          type: string
+          description: Default cost of the item. Decimal number, sent as a string.
+        discountable:
+          type: string
+          description: Whether discounts apply. "true" or "false", sent as a string.
+        tax:
+          type: string
+          description: Whether tax applies. "true" or "false", sent as a string.
+        itemType:
+          type: string
+          description: 'Item type, e.g. default. The ItemMatrix docs list: default, non_inventory, serialized, box,
+            serialized_assembly, assembly'
+        serialized:
+          type: string
+          description: Whether the item is serialized. "true" or "false", sent as a string.
+        description:
+          type: string
+          description: Item description
+        modelYear:
+          type: string
+          description: Model year (0 when unset). Integer, sent as a string.
+        upc:
+          type: string
+          description: UPC code
+        ean:
+          type: string
+          description: EAN code
+        customSku:
+          type: string
+          description: Custom SKU
+        manufacturerSku:
+          type: string
+          description: Manufacturer SKU
+        publishToEcom:
+          type: string
+          description: Whether the item is published to e-commerce. "true" or "false", sent as a string.
+        categoryID:
+          type: string
+          description: Category ID (0 = none). Integer ID, sent as a string.
+        taxClassID:
+          type: string
+          description: Tax class ID. Integer ID, sent as a string.
+        departmentID:
+          type: string
+          description: Department ID (0 = none). Integer ID, sent as a string.
+        itemMatrixID:
+          type: string
+          description: Item matrix this item belongs to (0 = none). Integer ID, sent as a string.
+        manufacturerID:
+          type: string
+          description: Manufacturer ID (0 = none). Integer ID, sent as a string.
+        seasonID:
+          type: string
+          description: Season ID (0 = none). Integer ID, sent as a string.
+        defaultVendorID:
+          type: string
+          description: Default vendor ID (0 = none). Integer ID, sent as a string.
+        Prices:
+          $ref: '#/components/schemas/ItemPrices'
+        ItemShops:
+          $ref: '#/components/schemas/ItemShopsWrite'
+    ItemMatrix:
+      type: object
+      description: A product with variants (colour/size). Its variants are Items with itemMatrixID set.
+      properties:
+        itemMatrixID:
+          type: string
+          description: Item matrix ID. Integer ID, sent as a string.
+        description:
+          type: string
+          description: Matrix description. Child items are named "<description> <attribute1> <attribute2> <attribute3>"
+        tax:
+          type: string
+          description: Whether tax is charged. "true" or "false", sent as a string.
+        defaultCost:
+          type: string
+          description: Default cost. Decimal number, sent as a string.
+        itemType:
+          type: string
+          description: default, non_inventory, serialized, box, serialized_assembly or assembly
+        serialized:
+          type: string
+          description: Whether serialized. "true" or "false", sent as a string.
+        modelYear:
+          type: string
+          description: Model year. Integer, sent as a string.
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        itemAttributeSetID:
+          type: string
+          description: ItemAttributeSet that defines the matrix axes. Integer ID, sent as a string.
+        manufacturerID:
+          type: string
+          description: Manufacturer ID. Integer ID, sent as a string.
+        categoryID:
+          type: string
+          description: Category ID. Integer ID, sent as a string.
+        defaultVendorID:
+          type: string
+          description: Default vendor ID. Integer ID, sent as a string.
+        taxClassID:
+          type: string
+          description: Tax class ID. Integer ID, sent as a string.
+        seasonID:
+          type: string
+          description: Season ID. Integer ID, sent as a string.
+        departmentID:
+          type: string
+          description: Department ID. Integer ID, sent as a string.
+        Prices:
+          $ref: '#/components/schemas/ItemPrices'
+        attribute1Values:
+          type: array
+          items:
+            type: string
+          description: Values used for the first attribute, e.g. colours
+        attribute2Values:
+          type: array
+          items:
+            type: string
+          description: Values used for the second attribute, e.g. sizes
+    ItemMatrixWrite:
+      type: object
+      properties:
+        description:
+          type: string
+          description: Matrix description
+        tax:
+          type: string
+          description: Whether tax is charged. "true" or "false", sent as a string.
+        defaultCost:
+          type: string
+          description: Default cost. Decimal number, sent as a string.
+        itemType:
+          type: string
+          description: default, non_inventory, serialized, box, serialized_assembly or assembly
+        serialized:
+          type: string
+          description: Whether serialized; must be "true" for itemType serialized or serialized_assembly. "true"
+            or "false", sent as a string.
+        modelYear:
+          type: string
+          description: Model year. Integer, sent as a string.
+        archived:
+          type: string
+          description: 'Update only: archive or restore. "true" or "false", sent as a string.'
+        itemAttributeSetID:
+          type: string
+          description: ItemAttributeSet for the matrix. Integer ID, sent as a string.
+        manufacturerID:
+          type: string
+          description: Manufacturer ID. Integer ID, sent as a string.
+        categoryID:
+          type: string
+          description: Category ID. Integer ID, sent as a string.
+        defaultVendorID:
+          type: string
+          description: Default vendor ID. Integer ID, sent as a string.
+        taxClassID:
+          type: string
+          description: Tax class ID. Integer ID, sent as a string.
+        seasonID:
+          type: string
+          description: Season ID. Integer ID, sent as a string.
+        departmentID:
+          type: string
+          description: Department ID. Integer ID, sent as a string.
+        Prices:
+          $ref: '#/components/schemas/ItemPrices'
+    ItemAttributeSet:
+      type: object
+      description: Defines the axes (up to three) of an item matrix.
+      properties:
+        itemAttributeSetID:
+          type: string
+          description: Attribute set ID. Integer ID, sent as a string.
+        name:
+          type: string
+          description: Name of the set. The fields table in the docs says only Color/Size, Size, Color and 3 Attributes
+            are allowed, but the create example uses another name (see SOURCE.md)
+        attributeName1:
+          type: string
+          description: Name of the first attribute, e.g. Color
+        attributeName2:
+          type: string
+          description: Name of the second attribute, e.g. Size
+        attributeName3:
+          type: string
+          description: Name of the third attribute
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        system:
+          type: string
+          description: Whether this is a built-in set. "true" or "false", sent as a string.
+    ItemAttributeSetWrite:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: Name of the set. The fields table in the docs says only Color/Size, Size, Color and 3 Attributes
+            are allowed, but the create example uses another name (see SOURCE.md)
+        attributeName1:
+          type: string
+          description: Name of the first attribute, e.g. Color
+        attributeName2:
+          type: string
+          description: Name of the second attribute, e.g. Size
+        attributeName3:
+          type: string
+          description: Name of the third attribute
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        system:
+          type: string
+          description: Whether this is a built-in set. "true" or "false", sent as a string.
+    Manufacturer:
+      type: object
+      properties:
+        manufacturerID:
+          type: string
+          description: Manufacturer ID. Integer ID, sent as a string.
+        name:
+          type: string
+          description: Manufacturer name
+        createTime:
+          type: string
+          description: Created. Date/time, ISO 8601.
+          format: date-time
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+    ManufacturerWrite:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: Manufacturer name
+    Category:
+      type: object
+      properties:
+        categoryID:
+          type: string
+          description: Category ID. Integer ID, sent as a string.
+        name:
+          type: string
+          description: Category name
+        nodeDepth:
+          type: string
+          description: Number of parent categories. Integer, sent as a string.
+        fullPathName:
+          type: string
+          description: Slash-delimited path, e.g. Clothing/Unisex
+        leftNode:
+          type: string
+          description: Tree position (read-only). Integer, sent as a string.
+        rightNode:
+          type: string
+          description: Tree position (read-only). Integer, sent as a string.
+        createTime:
+          type: string
+          description: Created. Date/time, ISO 8601.
+          format: date-time
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        parentID:
+          type: string
+          description: Parent category ID (0 = top level). Integer ID, sent as a string.
+    CategoryWrite:
+      type: object
+      required:
+      - name
+      - fullPathName
+      - parentID
+      properties:
+        name:
+          type: string
+          description: Category name
+        fullPathName:
+          type: string
+          description: Slash-delimited full path to the category; same as name for a top-level category
+        parentID:
+          type: string
+          description: Parent category ID; 0 for top level. Integer ID, sent as a string.
+    Vendor:
+      type: object
+      properties:
+        vendorID:
+          type: string
+          description: Vendor ID. Integer ID, sent as a string.
+        name:
+          type: string
+          description: Vendor name
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        accountNumber:
+          type: string
+          description: Your account number with the vendor
+        priceLevel:
+          type: string
+          description: Price level name with the vendor
+        updatePrice:
+          type: string
+          description: Update price from the catalog MSRP when added to an order. "true" or "false", sent as a string.
+        updateCost:
+          type: string
+          description: Update cost from the catalog when added to an order. "true" or "false", sent as a string.
+        updateDescription:
+          type: string
+          description: Update description from the catalog when added to an order. "true" or "false", sent as a
+            string.
+        shareSellThrough:
+          type: string
+          description: Share sell-through data with the vendor. "true" or "false", sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        b2bSellerUID:
+          type: string
+          description: Vendor ID in NuORDER
+        Contact:
+          $ref: '#/components/schemas/Contact'
+        Reps:
+          description: Names of the vendor representatives (shape not shown in the docs)
+    VendorWrite:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: Vendor name
+        accountNumber:
+          type: string
+          description: Account number with the vendor
+        priceLevel:
+          type: string
+          description: Price level name
+        updatePrice:
+          type: string
+          description: Update price from the catalog. "true" or "false", sent as a string.
+        updateCost:
+          type: string
+          description: Update cost from the catalog. "true" or "false", sent as a string.
+        updateDescription:
+          type: string
+          description: Update description from the catalog. "true" or "false", sent as a string.
+        shareSellThrough:
+          type: string
+          description: Share sell-through data. "true" or "false", sent as a string.
+        b2bSellerUID:
+          type: string
+          description: Vendor ID in NuORDER
+        Contact:
+          $ref: '#/components/schemas/ContactWrite'
+    TaxClass:
+      type: object
+      properties:
+        taxClassID:
+          type: string
+          description: Tax class ID. Integer ID, sent as a string.
+        name:
+          type: string
+          description: Tax class name, e.g. Item, Labor
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+    TaxCategory:
+      type: object
+      properties:
+        taxCategoryID:
+          type: string
+          description: Tax category ID. Integer ID, sent as a string.
+        isTaxInclusive:
+          type: string
+          description: Whether prices include tax. "true" or "false", sent as a string.
+        tax1Name:
+          type: string
+          description: Name of the first tax
+        tax2Name:
+          type: string
+          description: Name of the second tax
+        tax1Rate:
+          type: string
+          description: First tax rate as a fraction, e.g. 0.05. Decimal number, sent as a string.
+        tax2Rate:
+          type: string
+          description: Second tax rate as a fraction. Decimal number, sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+    ContactAddress:
+      type: object
+      properties:
+        address1:
+          type: string
+          description: Street line 1
+        address2:
+          type: string
+          description: Street line 2
+        city:
+          type: string
+          description: City
+        state:
+          type: string
+          description: State or province name
+        stateCode:
+          type: string
+          description: State or province code
+        zip:
+          type: string
+          description: Postal code
+        country:
+          type: string
+          description: Country name
+        countryCode:
+          type: string
+          description: Country code
+    ContactPhone:
+      type: object
+      properties:
+        number:
+          type: string
+          description: Phone number
+        useType:
+          type: string
+          description: Kind of number, e.g. Home
+    ContactEmail:
+      type: object
+      properties:
+        address:
+          type: string
+          description: Email address
+        useType:
+          type: string
+          description: Primary or Secondary (one of each allowed)
+    Contact:
+      type: object
+      description: Contact details. Contact records have no endpoint of their own; they are read and written as
+        a relation of Customer, Vendor, Employee or Shop.
+      properties:
+        custom:
+          type: string
+          description: Custom contact field
+        noEmail:
+          type: string
+          description: Customer opted out of email. "true" or "false", sent as a string.
+        noPhone:
+          type: string
+          description: Customer opted out of phone. "true" or "false", sent as a string.
+        noMail:
+          type: string
+          description: Customer opted out of postal mail. "true" or "false", sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        Addresses:
+          description: Object holding ContactAddress; the API returns an empty string when there are none.
+          oneOf:
+          - type: object
+            properties:
+              ContactAddress:
+                oneOf:
+                - $ref: '#/components/schemas/ContactAddress'
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/ContactAddress'
+          - type: string
+            description: Empty string when the contact has none
+        Phones:
+          description: Object holding ContactPhone; the API returns an empty string when there are none.
+          oneOf:
+          - type: object
+            properties:
+              ContactPhone:
+                oneOf:
+                - $ref: '#/components/schemas/ContactPhone'
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/ContactPhone'
+          - type: string
+            description: Empty string when the contact has none
+        Emails:
+          description: Object holding ContactEmail; the API returns an empty string when there are none.
+          oneOf:
+          - type: object
+            properties:
+              ContactEmail:
+                oneOf:
+                - $ref: '#/components/schemas/ContactEmail'
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/ContactEmail'
+          - type: string
+            description: Empty string when the contact has none
+        Websites:
+          description: Websites of the contact (shape not shown in the docs); empty string when none
+    ContactWrite:
+      type: object
+      description: Contact details written as a relation, e.g. {"Phones":{"ContactPhone":{"number":"...","useType":"Home"}}}.
+        Address writing is not shown in the docs (see SOURCE.md).
+      properties:
+        noEmail:
+          type: string
+          description: Customer opted out of email. "true" or "false", sent as a string.
+        noPhone:
+          type: string
+          description: Customer opted out of phone. "true" or "false", sent as a string.
+        noMail:
+          type: string
+          description: Customer opted out of postal mail. "true" or "false", sent as a string.
+        Phones:
+          type: object
+          properties:
+            ContactPhone:
+              $ref: '#/components/schemas/ContactPhone'
+        Emails:
+          type: object
+          properties:
+            ContactEmail:
+              $ref: '#/components/schemas/ContactEmail'
+    Customer:
+      type: object
+      properties:
+        customerID:
+          type: string
+          description: Customer ID. Integer ID, sent as a string.
+        firstName:
+          type: string
+          description: First name
+        lastName:
+          type: string
+          description: Last name
+        dob:
+          type: string
+          description: Date of birth. Date/time, ISO 8601.
+          format: date-time
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        title:
+          type: string
+          description: Job title
+        company:
+          type: string
+          description: Company name
+        companyRegistrationNumber:
+          type: string
+          description: Company registration number
+        vatNumber:
+          type: string
+          description: VAT number
+        createTime:
+          type: string
+          description: Created. Date/time, ISO 8601.
+          format: date-time
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        creditAccountID:
+          type: string
+          description: CreditAccount ID (0 = none). Integer ID, sent as a string.
+        customerTypeID:
+          type: string
+          description: CustomerType ID (0 = none). Integer ID, sent as a string.
+        discountID:
+          type: string
+          description: Discount ID (0 = none). Integer ID, sent as a string.
+        taxCategoryID:
+          type: string
+          description: TaxCategory ID (0 = none). Integer ID, sent as a string.
+        Contact:
+          $ref: '#/components/schemas/Contact'
+    CustomerWrite:
+      type: object
+      description: firstName and lastName are required on create.
+      properties:
+        firstName:
+          type: string
+          description: First name
+        lastName:
+          type: string
+          description: Last name
+        dob:
+          type: string
+          description: Date of birth. Date/time, ISO 8601.
+          format: date-time
+        title:
+          type: string
+          description: Job title
+        company:
+          type: string
+          description: Company name
+        companyRegistrationNumber:
+          type: string
+          description: Company registration number
+        vatNumber:
+          type: string
+          description: VAT number
+        customerTypeID:
+          type: string
+          description: CustomerType ID. Integer ID, sent as a string.
+        discountID:
+          type: string
+          description: Discount ID. Integer ID, sent as a string.
+        taxCategoryID:
+          type: string
+          description: TaxCategory ID. Integer ID, sent as a string.
+        archived:
+          type: string
+          description: 'Update only: archive or restore. "true" or "false", sent as a string.'
+        Contact:
+          $ref: '#/components/schemas/ContactWrite'
+    SaleLine:
+      type: object
+      description: One line of a sale. On create, itemID and unitQuantity are the usual fields.
+      properties:
+        saleLineID:
+          type: string
+          description: Sale line ID. Integer ID, sent as a string.
+        saleID:
+          type: string
+          description: Sale this line is on. Integer ID, sent as a string.
+        createTime:
+          type: string
+          description: Created. Date/time, ISO 8601.
+          format: date-time
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        unitQuantity:
+          type: string
+          description: Units sold; negative for refunds. Integer, sent as a string.
+        unitPrice:
+          type: string
+          description: Unit price after price rules. Decimal number, sent as a string.
+        normalUnitPrice:
+          type: string
+          description: Unit price before price rules. Decimal number, sent as a string.
+        discountAmount:
+          type: string
+          description: Discount amount. Decimal number, sent as a string.
+        discountPercent:
+          type: string
+          description: Discount percent. Decimal number, sent as a string.
+        avgCost:
+          type: string
+          description: Average cost. Decimal number, sent as a string.
+        fifoCost:
+          type: string
+          description: FIFO cost. Decimal number, sent as a string.
+        tax:
+          type: string
+          description: Whether the line is taxed. "true" or "false", sent as a string.
+        tax1Rate:
+          type: string
+          description: First tax rate. Decimal number, sent as a string.
+        tax2Rate:
+          type: string
+          description: Second tax rate. Decimal number, sent as a string.
+        isLayaway:
+          type: string
+          description: Layaway line. "true" or "false", sent as a string.
+        isWorkorder:
+          type: string
+          description: Work order line. "true" or "false", sent as a string.
+        isSpecialOrder:
+          type: string
+          description: Special order line. "true" or "false", sent as a string.
+        displayableSubtotal:
+          type: string
+          description: Line subtotal for display. Decimal number, sent as a string.
+        displayableUnitPrice:
+          type: string
+          description: Unit price for display. Decimal number, sent as a string.
+        calcLineDiscount:
+          type: string
+          description: Line discount. Decimal number, sent as a string.
+        calcTransactionDiscount:
+          type: string
+          description: Transaction discount applied to the line. Decimal number, sent as a string.
+        calcTotal:
+          type: string
+          description: Line total. Decimal number, sent as a string.
+        calcSubtotal:
+          type: string
+          description: Line subtotal. Decimal number, sent as a string.
+        calcTax1:
+          type: string
+          description: First tax total. Decimal number, sent as a string.
+        calcTax2:
+          type: string
+          description: Second tax total. Decimal number, sent as a string.
+        taxClassID:
+          type: string
+          description: Tax class ID. Integer ID, sent as a string.
+        customerID:
+          type: string
+          description: Customer (layaway, special order or work order lines). Integer ID, sent as a string.
+        discountID:
+          type: string
+          description: Line discount ID. Integer ID, sent as a string.
+        employeeID:
+          type: string
+          description: Employee responsible; defaults to the sale employee. Integer ID, sent as a string.
+        itemID:
+          type: string
+          description: Item sold. Integer ID, sent as a string.
+        noteID:
+          type: string
+          description: Note ID. Integer ID, sent as a string.
+        parentSaleLineID:
+          type: string
+          description: Original line when this is a refund line. Integer ID, sent as a string.
+        priceRuleID:
+          type: string
+          description: Price rule that lowered the price. Integer ID, sent as a string.
+        shopID:
+          type: string
+          description: Shop ID. Integer ID, sent as a string.
+        taxCategoryID:
+          type: string
+          description: Tax category ID. Integer ID, sent as a string.
+    SaleLines:
+      type: object
+      properties:
+        SaleLine:
+          oneOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/SaleLine'
+          - $ref: '#/components/schemas/SaleLine'
+          description: Array of lines; a single object is also accepted/returned.
+    SalePayment:
+      type: object
+      properties:
+        salePaymentID:
+          type: string
+          description: Payment ID. Integer ID, sent as a string.
+        amount:
+          type: string
+          description: Amount paid. Must add up to the sale total when completed is "true". Negative to load a gift
+            card. Decimal number, sent as a string.
+        tipAmount:
+          type: string
+          description: Tip. Decimal number, sent as a string.
+        createTime:
+          type: string
+          description: Created. Date/time, ISO 8601.
+          format: date-time
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        remoteReference:
+          type: string
+          description: Reference from the payment gateway
+        paymentID:
+          type: string
+          description: Payment reference
+        saleID:
+          type: string
+          description: Sale ID. Integer ID, sent as a string.
+        paymentTypeID:
+          type: string
+          description: PaymentType ID (see listPaymentTypes). Integer ID, sent as a string.
+        ccChargeID:
+          type: string
+          description: Card charge ID. Integer ID, sent as a string.
+        refPaymentID:
+          type: string
+          description: Payment this one refunds. Integer ID, sent as a string.
+        registerID:
+          type: string
+          description: Register ID. Integer ID, sent as a string.
+        employeeID:
+          type: string
+          description: Employee ID. Integer ID, sent as a string.
+        creditAccountID:
+          type: string
+          description: CreditAccount (gift card or store credit) used. Integer ID, sent as a string.
+    SalePayments:
+      type: object
+      properties:
+        SalePayment:
+          oneOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/SalePayment'
+          - $ref: '#/components/schemas/SalePayment'
+          description: Array of payments; a single object is also accepted.
+    SaleWrite:
+      type: object
+      description: Body for creating or updating a sale. SaleLines and SalePayments can be created in the same request.
+      properties:
+        discountPercent:
+          type: string
+          description: Deprecated discount percent. Decimal number, sent as a string.
+        completed:
+          type: string
+          description: '"true" completes the sale and removes inventory; payments must then equal the total. "true"
+            or "false", sent as a string.'
+        enablePromotions:
+          type: string
+          description: Run promotions on all lines. Can only be set on create. "true" or "false", sent as a string.
+        isTaxInclusive:
+          type: string
+          description: Whether the sale is tax inclusive. "true" or "false", sent as a string.
+        referenceNumber:
+          type: string
+          description: Reference number from an external system
+        receiptPreference:
+          type: string
+          description: Receipt preference, e.g. printed
+        completeTime:
+          type: string
+          description: Completion time (the docs say it can be changed). Date/time, ISO 8601.
+          format: date-time
+        customerID:
+          type: string
+          description: Customer ID. Integer ID, sent as a string.
+        discountID:
+          type: string
+          description: Discount ID. Integer ID, sent as a string.
+        employeeID:
+          type: string
+          description: Employee ID (required on create). Integer ID, sent as a string.
+        tipEmployeeID:
+          type: string
+          description: Tip employee ID. Integer ID, sent as a string.
+        quoteID:
+          type: string
+          description: Quote ID. Integer ID, sent as a string.
+        registerID:
+          type: string
+          description: Register ID (required on create). Integer ID, sent as a string.
+        shipToID:
+          type: string
+          description: Ship-to ID. Integer ID, sent as a string.
+        shopID:
+          type: string
+          description: Shop ID (required on create). Integer ID, sent as a string.
+        taxCategoryID:
+          type: string
+          description: Tax category ID. Integer ID, sent as a string.
+        SaleLines:
+          $ref: '#/components/schemas/SaleLines'
+        SalePayments:
+          $ref: '#/components/schemas/SalePayments'
+    Sale:
+      type: object
+      description: A sale. SaleLines, SalePayments and the other relations appear only when requested with load_relations.
+      properties:
+        saleID:
+          type: string
+          description: Sale ID. Integer ID, sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified (completion time when completed). Date/time, ISO 8601.
+          format: date-time
+        discountPercent:
+          type: string
+          description: Deprecated. Decimal number, sent as a string.
+        completed:
+          type: string
+          description: Whether completed. "true" or "false", sent as a string.
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        voided:
+          type: string
+          description: Whether voided. "true" or "false", sent as a string.
+        enablePromotions:
+          type: string
+          description: Whether promotions ran. "true" or "false", sent as a string.
+        isTaxInclusive:
+          type: string
+          description: Whether tax inclusive. "true" or "false", sent as a string.
+        createTime:
+          type: string
+          description: Created. Date/time, ISO 8601.
+          format: date-time
+        updatetime:
+          type: string
+          description: Last updated (the docs spell it updatetime in list/update responses and updateTime in the
+            create response). Date/time, ISO 8601.
+          format: date-time
+        completeTime:
+          type: string
+          description: Completed. Date/time, ISO 8601.
+          format: date-time
+        referenceNumber:
+          type: string
+          description: External reference number
+        referenceNumberSource:
+          type: string
+          description: Name of the external system
+        tax1Rate:
+          type: string
+          description: Default first tax rate. Decimal number, sent as a string.
+        tax2Rate:
+          type: string
+          description: Default second tax rate. Decimal number, sent as a string.
+        change:
+          type: string
+          description: Cash change given. Decimal number, sent as a string.
+        tipEnabled:
+          type: string
+          description: Whether tipping is on. "true" or "false", sent as a string.
+        receiptPreference:
+          type: string
+          description: Receipt preference
+        displayableSubtotal:
+          type: string
+          description: Subtotal for display. Decimal number, sent as a string.
+        ticketNumber:
+          type: string
+          description: Ticket number
+        calcDiscount:
+          type: string
+          description: Total discounted. Decimal number, sent as a string.
+        calcTotal:
+          type: string
+          description: Total. Decimal number, sent as a string.
+        calcSubtotal:
+          type: string
+          description: Subtotal. Decimal number, sent as a string.
+        calcTaxable:
+          type: string
+          description: Taxable subtotal. Decimal number, sent as a string.
+        calcNonTaxable:
+          type: string
+          description: Non-taxable subtotal. Decimal number, sent as a string.
+        calcAvgCost:
+          type: string
+          description: Total average cost. Decimal number, sent as a string.
+        calcFIFOCost:
+          type: string
+          description: Total FIFO cost. Decimal number, sent as a string.
+        calcTax1:
+          type: string
+          description: First tax total. Decimal number, sent as a string.
+        calcTax2:
+          type: string
+          description: Second tax total. Decimal number, sent as a string.
+        calcPayments:
+          type: string
+          description: Total of payments. Decimal number, sent as a string.
+        calcTips:
+          type: string
+          description: Total of tips. Decimal number, sent as a string.
+        total:
+          type: string
+          description: Sale total. Decimal number, sent as a string.
+        totalDue:
+          type: string
+          description: Total due. Decimal number, sent as a string.
+        displayableTotal:
+          type: string
+          description: Total for display. Decimal number, sent as a string.
+        balance:
+          type: string
+          description: Total minus payments. Decimal number, sent as a string.
+        cashRoundingDelta:
+          type: string
+          description: Cash rounding adjustment (read-only). Decimal number, sent as a string.
+        cashRoundedBalance:
+          type: string
+          description: Balance after cash rounding. Decimal number, sent as a string.
+        cashRoundedTotal:
+          type: string
+          description: Total after cash rounding. Decimal number, sent as a string.
+        customerID:
+          type: string
+          description: Customer ID (0 = none). Integer ID, sent as a string.
+        discountID:
+          type: string
+          description: Discount ID. Integer ID, sent as a string.
+        employeeID:
+          type: string
+          description: Employee ID. Integer ID, sent as a string.
+        tipEmployeeID:
+          type: string
+          description: Tip employee ID. Integer ID, sent as a string.
+        quoteID:
+          type: string
+          description: Quote ID. Integer ID, sent as a string.
+        registerID:
+          type: string
+          description: Register ID. Integer ID, sent as a string.
+        shipToID:
+          type: string
+          description: Ship-to ID. Integer ID, sent as a string.
+        shopID:
+          type: string
+          description: Shop ID. Integer ID, sent as a string.
+        taxCategoryID:
+          type: string
+          description: Tax category ID. Integer ID, sent as a string.
+        taxTotal:
+          type: string
+          description: Total tax. Decimal number, sent as a string.
+        SaleLines:
+          $ref: '#/components/schemas/SaleLines'
+        SalePayments:
+          $ref: '#/components/schemas/SalePayments'
+        Customer:
+          $ref: '#/components/schemas/Customer'
+        Shop:
+          $ref: '#/components/schemas/Shop'
+        TaxCategory:
+          $ref: '#/components/schemas/TaxCategory'
+    PaymentType:
+      type: object
+      properties:
+        paymentTypeID:
+          type: string
+          description: Payment type ID. Integer ID, sent as a string.
+        name:
+          type: string
+          description: Name, e.g. Cash
+        requireCustomer:
+          type: string
+          description: Needs a customer on the sale. "true" or "false", sent as a string.
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        internalReserved:
+          type: string
+          description: Predefined system type that cannot be changed. "true" or "false", sent as a string.
+        type:
+          type: string
+          description: cash, gift card, credit account, credit card or user defined (the docs show the value "cash";
+            exact strings for the others are not shown)
+        refundAsPaymentTypeID:
+          type: string
+          description: Payment type refunds go back as (0 = any). Integer ID, sent as a string.
+    Register:
+      type: object
+      properties:
+        registerID:
+          type: string
+          description: Register ID. Integer ID, sent as a string.
+        name:
+          type: string
+          description: Register name
+        open:
+          type: string
+          description: Whether open. "true" or "false", sent as a string.
+        openTime:
+          type: string
+          description: When it was opened. Date/time, ISO 8601.
+          format: date-time
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        tipEnabled:
+          type: string
+          description: Whether tipping is allowed. "true" or "false", sent as a string.
+        openEmployeeID:
+          type: string
+          description: Employee who opened it. Integer ID, sent as a string.
+        shopID:
+          type: string
+          description: Shop it is in. Integer ID, sent as a string.
+        ccTerminalID:
+          type: string
+          description: Card terminal ID. Integer ID, sent as a string.
+    Employee:
+      type: object
+      properties:
+        employeeID:
+          type: string
+          description: Employee ID. Integer ID, sent as a string.
+        firstName:
+          type: string
+          description: First name
+        lastName:
+          type: string
+          description: Last name
+        lockOut:
+          type: string
+          description: Whether locked out. "true" or "false", sent as a string.
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        contactID:
+          type: string
+          description: Contact ID. Integer ID, sent as a string.
+        clockInEmployeeHoursID:
+          type: string
+          description: Current EmployeeHours record. Integer ID, sent as a string.
+        employeeRoleID:
+          type: string
+          description: Role ID. Integer ID, sent as a string.
+        limitToShopID:
+          type: string
+          description: Shop the employee is limited to (0 = none). Integer ID, sent as a string.
+        lastShopID:
+          type: string
+          description: Last shop. Integer ID, sent as a string.
+        lastSaleID:
+          type: string
+          description: Last sale. Integer ID, sent as a string.
+        lastRegisterID:
+          type: string
+          description: Last register. Integer ID, sent as a string.
+    Order:
+      type: object
+      description: Vendor purchase order (not a customer order).
+      properties:
+        orderID:
+          type: string
+          description: Purchase order ID. Integer ID, sent as a string.
+        orderedDate:
+          type: string
+          description: Date placed with the vendor. Date/time, ISO 8601.
+          format: date-time
+        receivedDate:
+          type: string
+          description: Date it arrived. Date/time, ISO 8601.
+          format: date-time
+        arrivalDate:
+          type: string
+          description: Expected arrival date. Date/time, ISO 8601.
+          format: date-time
+        shipInstructions:
+          type: string
+          description: Instructions for the vendor or shipper
+        stockInstructions:
+          type: string
+          description: Instructions for staff receiving the order
+        shipCost:
+          type: string
+          description: Shipping cost. Decimal number, sent as a string.
+        shipVendorCost:
+          type: string
+          description: Shipping cost in the vendor currency. Decimal number, sent as a string.
+        otherCost:
+          type: string
+          description: Other costs; negative for a discount. Decimal number, sent as a string.
+        otherVendorCost:
+          type: string
+          description: Other costs in the vendor currency. Decimal number, sent as a string.
+        complete:
+          type: string
+          description: Whether complete. "true" or "false", sent as a string.
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        discount:
+          type: string
+          description: Percent discount on each unit cost. Decimal number, sent as a string.
+        totalDiscount:
+          type: string
+          description: Total discount. Decimal number, sent as a string.
+        totalQuantity:
+          type: string
+          description: Total quantity. Integer, sent as a string.
+        subTotalCost:
+          type: string
+          description: Subtotal. Decimal number, sent as a string.
+        totalCost:
+          type: string
+          description: Total cost. Decimal number, sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        refNum:
+          type: string
+          description: External reference number
+        createTime:
+          type: string
+          description: Created. Date/time, ISO 8601.
+          format: date-time
+        vendorCurrencyRate:
+          type: string
+          description: Vendor currency rate. Decimal number, sent as a string.
+        vendorCurrencyCode:
+          type: string
+          description: Vendor currency code
+        shippingCostMethod:
+          type: string
+          description: How shipping cost is spread, e.g. evenly
+        hasShipments:
+          type: string
+          description: Whether shipments exist. "true" or "false", sent as a string.
+        discountMethod:
+          type: string
+          description: How the discount is spread, e.g. proportionally
+        discountMoneyValue:
+          type: string
+          description: Discount as money. Decimal number, sent as a string.
+        discountMoneyVendorValue:
+          type: string
+          description: Discount as money in the vendor currency. Decimal number, sent as a string.
+        discountIsPercent:
+          type: string
+          description: Whether the discount is a percent. "true" or "false", sent as a string.
+        discountPercentValue:
+          type: string
+          description: Discount percent. Decimal number, sent as a string.
+        costsModifiedAfterShipment:
+          type: string
+          description: Costs changed after a shipment. "true" or "false", sent as a string.
+        b2bOrderUID:
+          type: string
+          description: NuORDER order ID
+        b2bOrderNumber:
+          type: string
+          description: NuORDER order number
+        vendorID:
+          type: string
+          description: Vendor ID. Integer ID, sent as a string.
+        noteID:
+          type: string
+          description: Note ID. Integer ID, sent as a string.
+        shopID:
+          type: string
+          description: Shop receiving the order. Integer ID, sent as a string.
+        createdByEmployeeID:
+          type: string
+          description: Employee who created it. Integer ID, sent as a string.
+    OrderWrite:
+      type: object
+      description: Order lines cannot be sent in the same request; add them with createOrderLine.
+      required:
+      - shopID
+      properties:
+        orderedDate:
+          type: string
+          description: Date placed with the vendor. Date/time, ISO 8601.
+          format: date-time
+        arrivalDate:
+          type: string
+          description: Expected arrival date. Date/time, ISO 8601.
+          format: date-time
+        shipInstructions:
+          type: string
+          description: Instructions for the vendor or shipper
+        stockInstructions:
+          type: string
+          description: Instructions for staff receiving the order. The docs request example spells this stockInstruction
+            (see SOURCE.md)
+        shipCost:
+          type: string
+          description: Shipping cost. Decimal number, sent as a string.
+        otherCost:
+          type: string
+          description: Other costs. Decimal number, sent as a string.
+        discount:
+          type: string
+          description: Percent discount. Decimal number, sent as a string.
+        refNum:
+          type: string
+          description: External reference number
+        shopID:
+          type: string
+          description: Shop that will receive the inventory (required). Integer ID, sent as a string.
+        vendorID:
+          type: string
+          description: Vendor ID (recommended). Integer ID, sent as a string.
+    OrderLine:
+      type: object
+      properties:
+        orderLineID:
+          type: string
+          description: Order line ID. Integer ID, sent as a string.
+        quantity:
+          type: string
+          description: Quantity ordered. Integer, sent as a string.
+        price:
+          type: string
+          description: Unit cost after any order discount. Decimal number, sent as a string.
+        originalPrice:
+          type: string
+          description: Unit cost before discount. Decimal number, sent as a string.
+        vendorCost:
+          type: string
+          description: Unit cost in the vendor currency. Decimal number, sent as a string.
+        checkedIn:
+          type: string
+          description: Whether the line has been checked in. Integer, sent as a string.
+        numReceived:
+          type: string
+          description: Received but not yet checked in. Integer, sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        total:
+          type: string
+          description: Line total. Decimal number, sent as a string.
+        createTime:
+          type: string
+          description: Created. Date/time, ISO 8601.
+          format: date-time
+        orderID:
+          type: string
+          description: Order ID. Integer ID, sent as a string.
+        itemID:
+          type: string
+          description: Item ID. Integer ID, sent as a string.
+    OrderLineWrite:
+      type: object
+      required:
+      - quantity
+      - price
+      - orderID
+      - itemID
+      properties:
+        quantity:
+          type: string
+          description: Quantity ordered. Integer, sent as a string.
+        price:
+          type: string
+          description: Unit cost after any order discount. Decimal number, sent as a string.
+        originalPrice:
+          type: string
+          description: Unit cost before discount. Decimal number, sent as a string.
+        vendorCost:
+          type: string
+          description: Unit cost in the vendor currency; use instead of originalPrice. Decimal number, sent as a
+            string.
+        numReceived:
+          type: string
+          description: Quantity already received (not yet added to inventory). Integer, sent as a string.
+        orderID:
+          type: string
+          description: Order this line belongs to. Integer ID, sent as a string.
+        itemID:
+          type: string
+          description: Item being ordered. Integer ID, sent as a string.
+    CreditAccount:
+      type: object
+      description: A gift card (giftCard "true") or a customer store-credit account.
+      properties:
+        creditAccountID:
+          type: string
+          description: Credit account ID. Integer ID, sent as a string.
+        name:
+          type: string
+          description: Name
+        code:
+          type: string
+          description: Gift card number, masked in responses (only the last digits show)
+        creditLimit:
+          type: string
+          description: Credit limit. Decimal number, sent as a string.
+        description:
+          type: string
+          description: Description
+        giftCard:
+          type: string
+          description: '"true" for a gift card. "true" or "false", sent as a string.'
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        customerID:
+          type: string
+          description: Customer (0 for gift cards). Integer ID, sent as a string.
+        balance:
+          type: string
+          description: Current balance. Decimal number, sent as a string.
+    CreditAccountCreate:
+      type: object
+      description: Use POST only to create gift cards. Add balance afterwards with a completed Sale that has a negative
+        SalePayment for the card.
+      required:
+      - code
+      - name
+      properties:
+        code:
+          type: string
+          description: Gift card redemption number, 8 to 32 digits
+        name:
+          type: string
+          description: Name, e.g. Gift Card
+        description:
+          type: string
+          description: Description
+        customerID:
+          type: string
+          description: Customer. The endpoint page lists it as required but the gift card tutorial omits it (see
+            SOURCE.md). Integer ID, sent as a string.
+    CreditAccountUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name
+        description:
+          type: string
+          description: Description
+    Shop:
+      type: object
+      description: A store or warehouse location.
+      properties:
+        shopID:
+          type: string
+          description: Shop ID. Integer ID, sent as a string.
+        name:
+          type: string
+          description: Shop name
+        serviceRate:
+          type: string
+          description: Hourly service rate. Decimal number, sent as a string.
+        timeZone:
+          type: string
+          description: Time zone, e.g. America/New_York
+        taxLabor:
+          type: string
+          description: Whether labor is taxed. "true" or "false", sent as a string.
+        labelTitle:
+          type: string
+          description: 'Product label title: No Title, Shop Name, Website, Phone or Custom'
+        labelMsrp:
+          type: string
+          description: Show MSRP on labels. "true" or "false", sent as a string.
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        companyRegistrationNumber:
+          type: string
+          description: Company registration number
+        vatNumber:
+          type: string
+          description: VAT number
+        zebraBrowserPrint:
+          type: string
+          description: Zebra browser print enabled. "true" or "false", sent as a string.
+        contactID:
+          type: string
+          description: Contact ID. Integer ID, sent as a string.
+        taxCategoryID:
+          type: string
+          description: Default tax category. Integer ID, sent as a string.
+        receiptSetupID:
+          type: string
+          description: Receipt setup ID. Integer ID, sent as a string.
+        ccGatewayID:
+          type: string
+          description: Card gateway ID. Integer ID, sent as a string.
+        gatewayConfigID:
+          type: string
+          description: Gateway config ID. Integer ID, sent as a string.
+        priceLevelID:
+          type: string
+          description: Default price level. Integer ID, sent as a string.
+        Contact:
+          $ref: '#/components/schemas/Contact'
+    Transfer:
+      type: object
+      description: Inventory transfer between two shops.
+      properties:
+        transferID:
+          type: string
+          description: Transfer ID. Integer ID, sent as a string.
+        note:
+          type: string
+          description: Note
+        archived:
+          type: string
+          description: Whether archived/done. "true" or "false", sent as a string.
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        createTime:
+          type: string
+          description: Created. Date/time, ISO 8601.
+          format: date-time
+        status:
+          type: string
+          description: 'Status: open, sent or received'
+        sentOn:
+          type: string
+          description: When it was sent. Date/time, ISO 8601.
+          format: date-time
+        needBy:
+          type: string
+          description: When it is needed at the receiving shop. Date/time, ISO 8601.
+          format: date-time
+        sendingShopID:
+          type: string
+          description: Sending shop. Integer ID, sent as a string.
+        sentByEmployeeID:
+          type: string
+          description: Employee who sent it. Integer ID, sent as a string.
+        receivingShopID:
+          type: string
+          description: Receiving shop. Integer ID, sent as a string.
+        createdByEmployeeID:
+          type: string
+          description: Employee who created it. Integer ID, sent as a string.
+        SendingShop:
+          $ref: '#/components/schemas/Shop'
+        ReceivingShop:
+          $ref: '#/components/schemas/Shop'
+        CreatedByEmployee:
+          $ref: '#/components/schemas/Employee'
+    TransferWrite:
+      type: object
+      required:
+      - sendingShopID
+      - receivingShopID
+      properties:
+        note:
+          type: string
+          description: Note
+        archived:
+          type: string
+          description: Whether archived. "true" or "false", sent as a string.
+        needBy:
+          type: string
+          description: When it is needed at the receiving shop. Date/time, ISO 8601.
+          format: date-time
+        sendingShopID:
+          type: string
+          description: Sending shop. Integer ID, sent as a string.
+        receivingShopID:
+          type: string
+          description: Receiving shop. Integer ID, sent as a string.
+    TransferItem:
+      type: object
+      description: Adding an item to a transfer does not change inventory; inventory moves when items are received
+        on a checked-in transfer.
+      properties:
+        transferItemID:
+          type: string
+          description: Transfer item ID. Integer ID, sent as a string.
+        toSend:
+          type: string
+          description: Quantity the shop is sending. Integer, sent as a string.
+        toReceive:
+          type: string
+          description: Quantity the receiving shop counted. Integer, sent as a string.
+        sent:
+          type: string
+          description: Quantity actually sent. Integer, sent as a string.
+        received:
+          type: string
+          description: Quantity actually received. Integer, sent as a string.
+        sentValue:
+          type: string
+          description: Cost value sent. Decimal number, sent as a string.
+        receivedValue:
+          type: string
+          description: Cost value received. Decimal number, sent as a string.
+        comment:
+          type: string
+          description: Note on the line
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        transferID:
+          type: string
+          description: Transfer ID. Integer ID, sent as a string.
+        itemID:
+          type: string
+          description: Item ID. Integer ID, sent as a string.
+    TransferItemsAdd:
+      type: object
+      required:
+      - TransferItems
+      properties:
+        TransferItems:
+          type: array
+          items:
+            type: object
+            required:
+            - itemID
+            properties:
+              toSend:
+                type: string
+                description: Quantity to send. Integer, sent as a string.
+              itemID:
+                type: string
+                description: Item ID. Integer ID, sent as a string.
+    Image:
+      type: object
+      properties:
+        imageID:
+          type: string
+          description: Image ID. Integer ID, sent as a string.
+        description:
+          type: string
+          description: Caption
+        filename:
+          type: string
+          description: Original file name
+        ordering:
+          type: string
+          description: Display order, from 0. Integer, sent as a string.
+        publicID:
+          type: string
+          description: ID used to fetch the image from Cloudinary
+        baseImageURL:
+          type: string
+          description: Base URL of the image
+        size:
+          type: string
+          description: File size in bytes. Integer, sent as a string.
+        createTime:
+          type: string
+          description: Created. Date/time, ISO 8601.
+          format: date-time
+        timeStamp:
+          type: string
+          description: Last modified. Date/time, ISO 8601.
+          format: date-time
+        itemID:
+          type: string
+          description: Item the image belongs to (0 if matrix). Integer ID, sent as a string.
+        itemMatrixID:
+          type: string
+          description: Item matrix the image belongs to (0 if item). Integer ID, sent as a string.
+    ImageData:
+      type: object
+      properties:
+        description:
+          type: string
+          description: Caption
+        ordering:
+          type: string
+          description: Display order, from 0 (optional, recommended). Integer, sent as a string.
+        itemID:
+          type: string
+          description: Item the image is for. Give itemID or itemMatrixID. Integer ID, sent as a string.
+        itemMatrixID:
+          type: string
+          description: Item matrix the image is for. Give itemID or itemMatrixID. Integer ID, sent as a string.
+    ImageUpload:
+      type: object
+      required:
+      - data
+      - image
+      properties:
+        data:
+          $ref: '#/components/schemas/ImageData'
+        image:
+          type: string
+          format: binary
+          description: The image file, sent as the second multipart part.
+    Account:
+      type: object
+      properties:
+        accountID:
+          type: string
+          description: Account ID; use it as {accountID} in the server URL. Integer ID, sent as a string.
+        name:
+          type: string
+          description: Account name
+        link:
+          type: object
+          properties:
+            '@attributes':
+              type: object
+              properties:
+                href:
+                  type: string
+                  description: Relative URL of the account, /API/V3/Account/{accountID}
+    ItemList:
+      type: object
+      description: Page of Item records. When the page holds one record the API may return an object instead of
+        an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        Item:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+    ItemResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        Item:
+          $ref: '#/components/schemas/Item'
+    ItemMatrixList:
+      type: object
+      description: Page of ItemMatrix records. When the page holds one record the API may return an object instead
+        of an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        ItemMatrix:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemMatrix'
+    ItemMatrixResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        ItemMatrix:
+          $ref: '#/components/schemas/ItemMatrix'
+    ItemAttributeSetList:
+      type: object
+      description: Page of ItemAttributeSet records. When the page holds one record the API may return an object
+        instead of an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        ItemAttributeSet:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemAttributeSet'
+    ItemAttributeSetResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        ItemAttributeSet:
+          $ref: '#/components/schemas/ItemAttributeSet'
+    ManufacturerList:
+      type: object
+      description: Page of Manufacturer records. When the page holds one record the API may return an object instead
+        of an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        Manufacturer:
+          type: array
+          items:
+            $ref: '#/components/schemas/Manufacturer'
+    ManufacturerResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        Manufacturer:
+          $ref: '#/components/schemas/Manufacturer'
+    CategoryList:
+      type: object
+      description: Page of Category records. When the page holds one record the API may return an object instead
+        of an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        Category:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    CategoryResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        Category:
+          $ref: '#/components/schemas/Category'
+    VendorList:
+      type: object
+      description: Page of Vendor records. When the page holds one record the API may return an object instead of
+        an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        Vendor:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vendor'
+    VendorResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        Vendor:
+          $ref: '#/components/schemas/Vendor'
+    CustomerList:
+      type: object
+      description: Page of Customer records. When the page holds one record the API may return an object instead
+        of an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        Customer:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+    CustomerResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        Customer:
+          $ref: '#/components/schemas/Customer'
+    SaleList:
+      type: object
+      description: Page of Sale records. When the page holds one record the API may return an object instead of
+        an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        Sale:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sale'
+    SaleResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        Sale:
+          $ref: '#/components/schemas/Sale'
+    OrderList:
+      type: object
+      description: Page of Order records. When the page holds one record the API may return an object instead of
+        an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        Order:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+    OrderResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        Order:
+          $ref: '#/components/schemas/Order'
+    CreditAccountList:
+      type: object
+      description: Page of CreditAccount records. When the page holds one record the API may return an object instead
+        of an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        CreditAccount:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditAccount'
+    CreditAccountResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        CreditAccount:
+          $ref: '#/components/schemas/CreditAccount'
+    ShopList:
+      type: object
+      description: Page of Shop records. When the page holds one record the API may return an object instead of
+        an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        Shop:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shop'
+    ShopResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        Shop:
+          $ref: '#/components/schemas/Shop'
+    TransferList:
+      type: object
+      description: Page of Transfer records. When the page holds one record the API may return an object instead
+        of an array.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        Transfer:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transfer'
+    TransferResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        Transfer:
+          $ref: '#/components/schemas/Transfer'
+    ItemShopList:
+      type: object
+      description: Page of ItemShop records.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        ItemShop:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemShop'
+    TaxClassList:
+      type: object
+      description: Page of TaxClass records.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        TaxClass:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxClass'
+    TaxCategoryList:
+      type: object
+      description: Page of TaxCategory records.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        TaxCategory:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxCategory'
+    PaymentTypeList:
+      type: object
+      description: Page of PaymentType records.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        PaymentType:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentType'
+    RegisterList:
+      type: object
+      description: Page of Register records.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        Register:
+          type: array
+          items:
+            $ref: '#/components/schemas/Register'
+    EmployeeList:
+      type: object
+      description: Page of Employee records.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        Employee:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+    TransferItemList:
+      type: object
+      description: Page of TransferItem records.
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/ListAttributes'
+        TransferItem:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferItem'
+    OrderLineResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        OrderLine:
+          $ref: '#/components/schemas/OrderLine'
+    ImageResponse:
+      type: object
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        Image:
+          $ref: '#/components/schemas/Image'
+    AccountResponse:
+      type: object
+      description: Docs show only the Account object; whether it comes in an @attributes envelope is not shown (see
+        SOURCE.md).
+      properties:
+        '@attributes':
+          $ref: '#/components/schemas/CountAttributes'
+        Account:
+          $ref: '#/components/schemas/Account'
+    TransferItemsAddResponse:
+      type: object
+      description: Response body is not shown in the docs (see SOURCE.md).
+      additionalProperties: true

@@ -3,7 +3,7 @@
 OpenAPI contracts for the commerce platforms the LINK! agent (link engine service v2) connects to.
 Each spec is uploaded (or linked) in the agent app's **Add a System** form so the agent knows which endpoints exist.
 
-> **Status: in progress.** Shopify, Square, Lightspeed X-Series and QuickBooks Online have spec files so far. Each platform folder has a `SOURCE.md`
+> **Status: in progress.** Shopify, Square, Lightspeed X-Series, Lightspeed R-Series and QuickBooks Online have spec files so far. Each platform folder has a `SOURCE.md`
 > that records where its spec comes from, how auth works, and what is still unverified.
 >
 > **Background, decisions, platform quirks and troubleshooting:** see [`KNOWLEDGE.md`](KNOWLEDGE.md).
@@ -45,7 +45,7 @@ Callback URL for every OAuth app: `https://agent.linktoany.com/oauth/callback`
 | Shopify | `specs/shopify` | OAuth 2.0 | Done | None; GraphQL checked against live schema, REST built from docs | **Yes** (GraphQL 27 ops + REST 31 ops) | Yes |
 | Square | `specs/square` | OAuth 2.0 | Done | **Official** (Apache-2.0) | **Yes** (trimmed, 73 ops) | Yes |
 | Lightspeed X-Series | `specs/lightspeed-x-series` | OAuth 2.0 | Done | Per-endpoint only (Apache-2.0): merged | **Yes** (71 ops) | Yes |
-| Lightspeed R-Series | `specs/lightspeed-r-series` | OAuth 2.0 | Done | None official | No | Yes |
+| Lightspeed R-Series | `specs/lightspeed-r-series` | OAuth 2.0 | Done | None; written from docs via Context7 | **Yes** (49 ops) | Yes |
 | Lightspeed K-Series | `specs/lightspeed-k-series` | OAuth 2.0 (verify) | **Blocked**: partner application | Unknown | No | Yes, once approved |
 | Clover | `specs/clover` | OAuth 2.0 | Done (sandbox) | None official; Postman collection | No | Yes |
 | Cin7 Core | `specs/cin7-core` | API key | Ask Sandesh | Apiary docs (verify format) | No | N/A |
