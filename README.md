@@ -6,14 +6,15 @@ Each spec is uploaded (or linked) in the agent app's **Add a System** form so th
 > **Status: in progress.** Shopify, Square, Lightspeed X-Series, Lightspeed R-Series and QuickBooks Online have spec files so far. Each platform folder has a `SOURCE.md`
 > that records where its spec comes from, how auth works, and what is still unverified.
 >
-> **Background, decisions, platform quirks and troubleshooting:** see [`KNOWLEDGE.md`](KNOWLEDGE.md).
+> **Background, decisions, platform quirks and troubleshooting:** see [`KNOWLEDGE.md`](KNOWLEDGE.md) for cross-platform content and
+> each platform's own `specs/<platform>/KNOWLEDGE.md`.
 
 ## Layout
 
 ```
 agent-open-api-contracts/
 ├── README.md                 # this file: status table, rules, how to add a spec
-├── KNOWLEDGE.md              # why specs are built this way, platform quirks, troubleshooting, refresh checklist
+├── KNOWLEDGE.md              # cross-platform: why specs are built this way, versioning, refresh checklist, index of per-platform files
 ├── package.json              # `npm run lint`, `npm run validate:shopify` (installs graphql)
 ├── redocly.yaml              # lint rules for every spec
 ├── scripts/
@@ -27,10 +28,12 @@ agent-open-api-contracts/
 │   └── build_shopify_rest.py       # Shopify REST: built from the REST reference pages
 ├── templates/
 │   ├── SOURCE.md             # copy into a new platform folder
+│   ├── KNOWLEDGE.md          # copy into a new platform folder
 │   └── openapi.yaml          # minimal valid OpenAPI 3.0 skeleton
 └── specs/
     └── <platform>/
         ├── SOURCE.md         # source URL, license, auth, base URL, scopes, open questions
+        ├── KNOWLEDGE.md      # setup, build method, quirks, inventory tracking, troubleshooting, open items
         └── openapi.json|yaml # the contract (Shopify has graphql/ and rest/ subfolders)
 ```
 
@@ -69,13 +72,14 @@ A spec only needs the endpoints for these, not the whole upstream API.
 
 ## Add or update a spec
 
-1. Read `specs/<platform>/SOURCE.md` (or copy `templates/SOURCE.md` for a new platform).
+1. Read `specs/<platform>/SOURCE.md` and `specs/<platform>/KNOWLEDGE.md` (or copy `templates/SOURCE.md` and `templates/KNOWLEDGE.md` for a new platform).
 2. Get the spec:
    - Official spec: download it, trim to the focus resources if it is very large, keep the version.
    - No official spec: write `openapi.yaml` from the platform docs, starting from `templates/openapi.yaml`.
 3. Save it as `specs/<platform>/openapi.json` or `openapi.yaml`.
 4. Update `SOURCE.md`: source URL, upstream version, date pulled, what was trimmed, `(verify)` items cleared.
-5. Run `./scripts/lint.sh`, then update the status table above.
+5. Create or update `specs/<platform>/KNOWLEDGE.md` (quirks, troubleshooting, open items) and the platform table in the global `KNOWLEDGE.md`.
+6. Run `./scripts/lint.sh`, then update the status table above.
 
 ## Versioning
 

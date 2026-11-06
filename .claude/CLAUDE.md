@@ -1,6 +1,6 @@
 # Agent Open API Contracts — rules for Claude
 
-OpenAPI specs for the LINK! agent's commerce integrations. **Read `KNOWLEDGE.md` before changing any spec**
+OpenAPI specs for the LINK! agent's commerce integrations. **Read `KNOWLEDGE.md` and the platform's `specs/<platform>/KNOWLEDGE.md` before changing any spec**
 (build methods, platform quirks, version pins, troubleshooting). `README.md` has the status table and setup.
 
 ## Never hand-edit generated files
@@ -14,7 +14,7 @@ Change the source, rebuild, lint. Generated → source:
 ## Before every commit
 - `./scripts/lint.sh` passes; Shopify GraphQL changes also pass `npm run validate:shopify`.
 - The platform's `SOURCE.md` is updated: counts, "Last pulled" date, pins, open questions.
-- README status table and `KNOWLEDGE.md` updated if behaviour, pins or decisions changed.
+- README status table, `KNOWLEDGE.md` and the platform's `specs/<platform>/KNOWLEDGE.md` updated if behaviour, pins or decisions changed.
 
 ## Versioning
 - One live spec per platform; upstream API version in `info.version` (or the version header in `SOURCE.md`).
